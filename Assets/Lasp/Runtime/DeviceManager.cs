@@ -10,14 +10,17 @@ namespace Lasp
 
         public static IEnumerable<Device> Devices => UpdateAndGetDeviceList();
 
+        public static Device FindDevice(string id)
+            => _deviceList.Find(dev => dev.ID == id);
+
         static List<Device> _deviceList = new List<Device>();
         static bool _shouldScanDevices = true;
 
         static List<Device> UpdateAndGetDeviceList()
         {
-            if (!_shouldScanDevices) return _deviceList;
-
             Context.FlushEvents();
+
+            if (!_shouldScanDevices) return _deviceList;
 
             // Reconstruct the device list.
             _deviceList.Clear();

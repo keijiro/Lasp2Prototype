@@ -4,11 +4,13 @@ namespace Lasp
     {
         public string ID { get; private set; }
         public string Name { get; private set; }
+        public int ChannelCount { get; private set; }
 
         internal Device(SoundIO.Device device)
         {
             ID = device.ID;
             Name = device.Name;
+            ChannelCount = device.Layouts[0].ChannelCount;
         }
     }
 }
