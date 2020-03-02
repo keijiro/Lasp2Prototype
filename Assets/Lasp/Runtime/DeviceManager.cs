@@ -4,18 +4,6 @@ using UnityEngine.LowLevel;
 
 namespace Lasp
 {
-    public sealed class Device
-    {
-        public string ID { get; private set; }
-        public string Name { get; private set; }
-
-        internal Device(SoundIO.Device device)
-        {
-            ID = device.ID;
-            Name = device.Name;
-        }
-    }
-
     public static class DeviceManager
     {
         #region Device handling
@@ -23,13 +11,21 @@ namespace Lasp
         public static IEnumerable<Device> Devices => DeviceList;
 
         static List<Device> DeviceList => GetDevicesWithLazyInitialization();
-        static List<Device> _deviceList;
+        static List<Device> _deviceList;// = new List<Device>();
 
         static List<Device> GetDevicesWithLazyInitialization()
         {
+            if (_shouldRescan)
+            {
+                _deviceList = null;
+                _shouldRescan = false;
+            }
+
             if (_deviceList != null) return _deviceList;
 
             _deviceList = new List<Device>();
+
+            Context.FlushEvents();
 
             var count = Context.InputDeviceCount;
             for (var i = 0; i < count; i++)
@@ -42,10 +38,22 @@ namespace Lasp
                 }
             }
 
+            UnityEngine.Debug.Log("SCAN");
+
             return _deviceList;
         }
 
         #endregion
+
+        static SoundIO.Context.OnDevicesChangeDelegate _onDevicesChangeDelegate =
+            new SoundIO.Context.OnDevicesChangeDelegate(OnDevicesChange);
+
+        static bool _shouldRescan;
+
+        static void OnDevicesChange(System.IntPtr pointer)
+        {
+            _shouldRescan = true;
+        }
 
         #region SoundIO context management
 
@@ -58,6 +66,8 @@ namespace Lasp
             if (_context == null)
             {
                 _context = SoundIO.Context.Create();
+
+                _context.OnDevicesChange = _onDevicesChangeDelegate;
 
                 _context.Connect();
                 _context.FlushEvents();

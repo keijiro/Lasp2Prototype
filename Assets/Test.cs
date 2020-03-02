@@ -10,6 +10,6 @@ class Test : MonoBehaviour
     {
         _label.text = Lasp.DeviceManager.Devices.
             Select(dev => $"{dev.ID} | {dev.Name}").
-            Aggregate((a, b) => a + "\n" + b);
+            Aggregate(string.Empty, (a, b) => a + "\n" + b);
     }
 }
