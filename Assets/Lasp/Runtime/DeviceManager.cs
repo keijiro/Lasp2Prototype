@@ -6,39 +6,38 @@ namespace Lasp
 {
     public static class DeviceManager
     {
-        #region Device handling
+        #region Device enumeration
 
-        public static IEnumerable<Device> Devices => DeviceList;
+        public static IEnumerable<Device> Devices => UpdateAndGetDeviceList();
 
-        static List<Device> DeviceList => GetDevicesWithLazyInitialization();
-        static List<Device> _deviceList;// = new List<Device>();
+        static List<Device> _deviceList = new List<Device>();
+        static bool _shouldScanDevices = true;
 
-        static List<Device> GetDevicesWithLazyInitialization()
+        static List<Device> UpdateAndGetDeviceList()
         {
-            if (_shouldRescan)
-            {
-                _deviceList = null;
-                _shouldRescan = false;
-            }
-
-            if (_deviceList != null) return _deviceList;
-
-            _deviceList = new List<Device>();
+            if (!_shouldScanDevices) return _deviceList;
 
             Context.FlushEvents();
+
+            // Reconstruct the device list.
+            _deviceList.Clear();
 
             var count = Context.InputDeviceCount;
             for (var i = 0; i < count; i++)
             {
                 using (var dev = Context.GetInputDevice(i))
                 {
+                    // We don't use raw devices.
                     if (dev.IsRaw) continue;
+
+                    // Hide devices without a channel layout.
                     if (dev.Layouts.Length == 0) continue;
+
                     _deviceList.Add(new Device(dev));
                 }
             }
 
-            UnityEngine.Debug.Log("SCAN");
+            _shouldScanDevices = false;
 
             return _deviceList;
         }
@@ -48,11 +47,9 @@ namespace Lasp
         static SoundIO.Context.OnDevicesChangeDelegate _onDevicesChangeDelegate =
             new SoundIO.Context.OnDevicesChangeDelegate(OnDevicesChange);
 
-        static bool _shouldRescan;
-
         static void OnDevicesChange(System.IntPtr pointer)
         {
-            _shouldRescan = true;
+            _shouldScanDevices = true;
         }
 
         #region SoundIO context management
