@@ -8,41 +8,42 @@ namespace Lasp
     {
         #region Device enumeration
 
-        public static IEnumerable<Device> Devices => UpdateAndGetDeviceList();
+        public static IEnumerable<DeviceDescriptor> InputDevices
+            => EnumerateDeviceDescriptors();
 
-        public static Device FindDevice(string id)
-            => _deviceList.Find(dev => dev.ID == id);
+        public static InputStream GetInputStream(DeviceDescriptor desc)
+            => new InputStream { _deviceHandle = desc._handle };
 
-        static List<Device> _deviceList = new List<Device>();
+        static List<InputDeviceHandle> _inputDevices
+            = new List<InputDeviceHandle>(); 
+
         static bool _shouldScanDevices = true;
 
-        static List<Device> UpdateAndGetDeviceList()
+        static IEnumerable<DeviceDescriptor> EnumerateDeviceDescriptors()
         {
             Context.FlushEvents();
 
-            if (!_shouldScanDevices) return _deviceList;
-
-            // Reconstruct the device list.
-            _deviceList.Clear();
-
-            var count = Context.InputDeviceCount;
-            for (var i = 0; i < count; i++)
+            if (_shouldScanDevices)
             {
-                using (var dev = Context.GetInputDevice(i))
+                // Reconstruct the device list.
+                foreach (var dev in _inputDevices) dev.Dispose();
+                _inputDevices.Clear();
+
+                var count = Context.InputDeviceCount;
+                for (var i = 0; i < count; i++)
                 {
-                    // We don't use raw devices.
-                    if (dev.IsRaw) continue;
-
-                    // Hide devices without a channel layout.
-                    if (dev.Layouts.Length == 0) continue;
-
-                    _deviceList.Add(new Device(dev));
+                    var dev = Context.GetInputDevice(i);
+                    if (!dev.IsRaw && dev.Layouts.Length > 0)
+                        _inputDevices.Add(InputDeviceHandle.CreateAndOwn(dev));
+                    else
+                        dev.Dispose();
                 }
+
+                _shouldScanDevices = false;
             }
 
-            _shouldScanDevices = false;
-
-            return _deviceList;
+            return _inputDevices.
+                Select(dev => new DeviceDescriptor { _handle = dev });
         }
 
         #endregion

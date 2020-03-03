@@ -1,0 +1,15 @@
+{
+    "name": "Lasp.Runtime",
+    "references": [
+        "GUID:5e0966a2366ad464888a2470749e8879"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

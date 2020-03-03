@@ -8,7 +8,7 @@ class Test : MonoBehaviour
 
     void Update()
     {
-        _label.text = Lasp.DeviceManager.Devices.
+        _label.text = Lasp.DeviceManager.InputDevices.
             Select(dev => $"{dev.ID} | {dev.Name}").
             Aggregate(string.Empty, (a, b) => a + "\n" + b);
     }
