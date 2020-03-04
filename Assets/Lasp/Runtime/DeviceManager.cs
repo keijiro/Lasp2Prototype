@@ -11,8 +11,14 @@ namespace Lasp
         public static IEnumerable<DeviceDescriptor> InputDevices
             => EnumerateDeviceDescriptors();
 
+        public static DeviceDescriptor FindDevice(string id)
+            => InputDevices.FirstOrDefault(d => d.ID == id);
+
         public static InputStream GetInputStream(DeviceDescriptor desc)
             => new InputStream { _deviceHandle = desc._handle };
+
+        public static InputStream GetInputStream(string id)
+            => GetInputStream(FindDevice(id));
 
         static List<InputDeviceHandle> _inputDevices
             = new List<InputDeviceHandle>(); 
@@ -87,6 +93,10 @@ namespace Lasp
         static void Update()
         {
             Context.FlushEvents();
+
+            var dt = UnityEngine.Time.deltaTime;
+
+            foreach (var dev in _inputDevices) dev.Update(dt);
         }
 
         #endregion

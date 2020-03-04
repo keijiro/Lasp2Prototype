@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 
 namespace Lasp
@@ -10,7 +11,9 @@ namespace Lasp
         public DeviceDescriptor Device { get; private set; }
         public FilterType FilterType { get; set; }
 
-        public ReadOnlySpan<float> AudioDataSpan => ReadOnlySpan<float>.Empty;
+        public ReadOnlySpan<float> AudioDataSpan
+            => MemoryMarshal.Cast<byte, float>(_deviceHandle.LastFrameWindow);
+
         public NativeSlice<float> AudioDataSlice => default(NativeSlice<float>);
 
         public float AudioRmsLevel => 0.0f;

@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using InvalidOp = System.InvalidOperationException;
+using PInvokeCallbackAttribute = AOT.MonoPInvokeCallbackAttribute;
 
 namespace Lasp
 {
@@ -18,17 +19,27 @@ namespace Lasp
             => IsStreamActive ? (float)_stream.SoftwareLatency : 0;
 
         public ReadOnlySpan<byte> LastFrameWindow =>
-            new ReadOnlySpan<byte>(_window, 0, _windowSize);
+            PrepareAndGetLastFrameWindow();
+
+        ReadOnlySpan<byte> PrepareAndGetLastFrameWindow()
+        {
+            if (!IsStreamActive) OpenStream();
+            return new ReadOnlySpan<byte>(_window, 0, _windowSize);
+        }
 
         public static InputDeviceHandle CreateAndOwn(SoundIO.Device device)
         {
-            return new InputDeviceHandle { _device = device };
+            return new InputDeviceHandle(device);
         }
 
         public void Dispose()
         {
             _stream?.Dispose();
-            _device?.Dispose();
+            _stream = null;
+
+            _device.Dispose();
+            _device = null;
+
             _self.Free();
         }
 
@@ -55,23 +66,15 @@ namespace Lasp
             }
         }
 
-        #endregion
-
-        int ChannelCount => _stream.Layout.ChannelCount;
-        int SampleRate => _stream.SampleRate;
-
-        // Hidden default constructor
-        InputDeviceHandle() {}
-
-        #region Constructor
-
-        void OpenStream()
+        public void OpenStream()
         {
-            _self = GCHandle.Alloc(this);
-            _stream = SoundIO.InStream.Create(_device);
+            if (IsStreamActive)
+                throw new InvalidOp("Stream alreadly opened");
 
             try
             {
+                _stream = SoundIO.InStream.Create(_device);
+
                 if (_stream.IsInvalid)
                     throw new InvalidOp("Stream allocation error");
 
@@ -111,20 +114,27 @@ namespace Lasp
             }
             catch
             {
-                // Dispose the resources on an exception.
-                _stream.Dispose();
-                _device.Dispose();
+                // Dispose the stream on an exception.
+                _stream?.Dispose();
                 _stream = null;
-                _device = null;
                 throw;
             }
         }
 
+        public void CloseStream()
+        {
+            if (!IsStreamActive)
+                throw new InvalidOp("Stream not opened");
+
+            _stream?.Dispose();
+            _stream = null;
+        }
+
         #endregion
 
-        #region Internal objects
+        #region Private objects
 
-        // GC handle used to share 'this' pointer with unmanaged code
+        // A GC handle used to share 'this' pointer with unmanaged code
         GCHandle _self;
 
         // SoundIO objects
@@ -142,24 +152,38 @@ namespace Lasp
 
         #endregion
 
-        #region Internal function
+        #region Private properties and methods
 
-        int CalculateBufferSize(float second) =>
-            sizeof(float) * ChannelCount * (int)(SampleRate * second);
+        int CalculateBufferSize(float second)
+            => (int)(_stream.SampleRate * second) *
+               _stream.Layout.ChannelCount * sizeof(float);
+
+        InputDeviceHandle(SoundIO.Device device)
+        {
+            _self = GCHandle.Alloc(this);
+            _device = device;
+        }
 
         #endregion
 
         #region SoundIO callback delegates
 
-        static SoundIO.InStream.ReadCallbackDelegate _readCallback = OnReadInStream;
-        static SoundIO.InStream.OverflowCallbackDelegate _overflowCallback = OnOverflowInStream;
-        static SoundIO.InStream.ErrorCallbackDelegate _errorCallback = OnErrorInStream;
+        static SoundIO.InStream.ReadCallbackDelegate
+            _readCallback = OnReadInStream;
 
-        [AOT.MonoPInvokeCallback(typeof(SoundIO.InStream.ReadCallbackDelegate))]
-        unsafe static void OnReadInStream(ref SoundIO.InStreamData stream, int min, int left)
+        static SoundIO.InStream.OverflowCallbackDelegate
+            _overflowCallback = OnOverflowInStream;
+
+        static SoundIO.InStream.ErrorCallbackDelegate
+            _errorCallback = OnErrorInStream;
+
+        [PInvokeCallback(typeof(SoundIO.InStream.ReadCallbackDelegate))]
+        unsafe static void OnReadInStream
+            (ref SoundIO.InStreamData stream, int min, int left)
         {
             // Recover the 'this' reference from the UserData pointer.
-            var self = (InputDeviceHandle)GCHandle.FromIntPtr(stream.UserData).Target;
+            var self = (InputDeviceHandle)
+                GCHandle.FromIntPtr(stream.UserData).Target;
 
             while (left > 0)
             {
@@ -198,17 +222,14 @@ namespace Lasp
             }
         }
 
-        [AOT.MonoPInvokeCallback(typeof(SoundIO.InStream.OverflowCallbackDelegate))]
+        [PInvokeCallback(typeof(SoundIO.InStream.OverflowCallbackDelegate))]
         static void OnOverflowInStream(ref SoundIO.InStreamData stream)
-        {
-            UnityEngine.Debug.LogWarning("InStream overflow");
-        }
+            => UnityEngine.Debug.LogWarning("InStream overflow");
 
-        [AOT.MonoPInvokeCallback(typeof(SoundIO.InStream.ErrorCallbackDelegate))]
-        static void OnErrorInStream(ref SoundIO.InStreamData stream, SoundIO.Error error)
-        {
-            UnityEngine.Debug.LogError($"InStream error ({error})");
-        }
+        [PInvokeCallback(typeof(SoundIO.InStream.ErrorCallbackDelegate))]
+        static void OnErrorInStream
+            (ref SoundIO.InStreamData stream, SoundIO.Error error)
+            => UnityEngine.Debug.LogError($"InStream error ({error})");
 
         #endregion
     }
