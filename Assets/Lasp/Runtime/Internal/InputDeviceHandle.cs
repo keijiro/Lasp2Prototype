@@ -5,6 +5,22 @@ using PInvokeCallbackAttribute = AOT.MonoPInvokeCallbackAttribute;
 
 namespace Lasp
 {
+    //
+    // Internal input device handle class
+    //
+    // This is the one big monolithic class for managing a pair of an audio
+    // input device and its input stream.
+    //
+    // Initially, it only manages a device object, then it starts streaming
+    // when someone tries to read the audio data. The stream will be
+    // automatically closed when the data hasn't been accessed for several
+    // frames.
+    //
+    // It not only manages these objects, but also calculates audio levels of
+    // each channel. They're managed in an on-demand fashion too: It starts
+    // calculating them when accessed, and stops calculation when it's not
+    // accessed.
+    //
     sealed class InputDeviceHandle : System.IDisposable
     {
         #region Public properties and methods
@@ -24,13 +40,18 @@ namespace Lasp
         public float Latency
             => IsStreamActive ? (float)_stream.SoftwareLatency : 0;
 
-        public float AudioRmsLevel => Prepare() ? _audioRmsLevel : 0;
+        public float GetChannelLevel(int channel)
+            => Prepare() ? _audioLevels[channel] : 0;
 
-        public ReadOnlySpan<byte> LastFrameWindow =>
+        public ReadOnlySpan<float> LastFrameWindow =>
             PrepareAndGetLastFrameWindow();
+
+        ulong _unusedCount;
 
         bool Prepare()
         {
+            _unusedCount = 0;
+
             if (!IsStreamActive)
             {
                 OpenStream();
@@ -42,10 +63,11 @@ namespace Lasp
             }
         }
 
-        ReadOnlySpan<byte> PrepareAndGetLastFrameWindow()
+        ReadOnlySpan<float> PrepareAndGetLastFrameWindow()
         {
-            if (!IsStreamActive) OpenStream();
-            return new ReadOnlySpan<byte>(_window, 0, _windowSize);
+            Prepare();
+            return MemoryMarshal.Cast<byte, float>
+                (new ReadOnlySpan<byte>(_window, 0, _windowSize));
         }
 
         public static InputDeviceHandle CreateAndOwn(SoundIO.Device device)
@@ -69,6 +91,12 @@ namespace Lasp
             // Nothing to do when the stream is inactive.
             if (!IsStreamActive) return;
 
+            if (++_unusedCount > 10)
+            {
+                CloseStream();
+                return;
+            }
+
             // Last frame window size
             _windowSize =
                 Math.Min(_window.Length, CalculateBufferSize(deltaTime));
@@ -86,26 +114,33 @@ namespace Lasp
                 if (_ring.OverflowCount > 0) _ring.Clear();
             }
 
-            _audioRmsLevel = CalculateRMS();
+            CalculateLevels();
         }
 
-        float _audioRmsLevel;
+        float [] _audioLevels;
 
-        float CalculateRMS()
+        void CalculateLevels()
         {
-            var data = MemoryMarshal.Cast<byte, float>(LastFrameWindow);
-            var stride = ChannelCount;
+            var window = new ReadOnlySpan<byte>(_window, 0, _windowSize);
+            var data = MemoryMarshal.Cast<byte, float>(window);
+            var channels = ChannelCount;
 
-            if (data.Length == 0) return 0;
+            if (data.Length == 0) return;
 
-            var sq_sum = 0.0f;
-            for (var i = 0; i < data.Length; i += stride)
-                sq_sum += data[i] * data[i];
+            unsafe
+            {
+                var sq_sum = stackalloc float [channels];
+                var offs = 0;
+                for (var i = 0; i < data.Length; i += channels)
+                    for (var j = 0; j < channels; j++, offs++)
+                        sq_sum[j] += data[offs] * data[offs];
 
-            return Unity.Mathematics.math.sqrt(sq_sum / data.Length);
+                for (var i = 0; i < channels; i++)
+                    _audioLevels[i] = Unity.Mathematics.math.sqrt(sq_sum[i] / data.Length);
+            }
         }
 
-        public void OpenStream()
+        void OpenStream()
         {
             if (IsStreamActive)
                 throw new InvalidOp("Stream alreadly opened");
@@ -158,9 +193,11 @@ namespace Lasp
                 _stream = null;
                 throw;
             }
+
+            _audioLevels = new float[ChannelCount];
         }
 
-        public void CloseStream()
+        void CloseStream()
         {
             if (!IsStreamActive)
                 throw new InvalidOp("Stream not opened");
