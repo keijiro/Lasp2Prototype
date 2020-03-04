@@ -23,81 +23,118 @@ namespace Lasp
     //
     sealed class InputDeviceHandle : System.IDisposable
     {
-        #region Public properties and methods
+        #region SoundIO device object
 
         public SoundIO.Device SioDevice => _device;
         public bool IsValid => _device != null;
 
+        SoundIO.Device _device;
+
+        #endregion
+
+        #region SoundIO stream object
+
         public bool IsStreamActive
-            => _stream != null && !_stream.IsInvalid && !_stream.IsClosed;
+          => _stream != null && !_stream.IsInvalid && !_stream.IsClosed;
 
-        public int ChannelCount
-            => IsStreamActive ? _stream.Layout.ChannelCount : 0;
+        SoundIO.InStream _stream;
 
-        public int SampleRate
-            => IsStreamActive ? _stream.SampleRate : 0;
+        #endregion
 
-        public float Latency
-            => IsStreamActive ? (float)_stream.SoftwareLatency : 0;
+        #region Basic stream properties
+
+        public int StreamChannelCount => PreparedStream.Layout.ChannelCount;
+        public int StreamSampleRate => PreparedStream.SampleRate;
+
+        #endregion
+
+        #region Per-channel audio levels
 
         public float GetChannelLevel(int channel)
-            => Prepare() ? _audioLevels[channel] : 0;
+          => Prepare() ? _audioLevels[channel] : 0;
 
-        public ReadOnlySpan<float> LastFrameWindow =>
-            PrepareAndGetLastFrameWindow();
+        float [] _audioLevels;
 
-        ulong _unusedCount;
+        #endregion
+
+        #region Interleaved audio data
+
+        public ReadOnlySpan<float> LastFrameWindow
+          => MemoryMarshal.Cast<byte, float>(LastFrameWindowRaw);
+
+        ReadOnlySpan<byte> LastFrameWindowRaw
+          => Prepare() ?
+            new ReadOnlySpan<byte>(_window, 0, _windowSize) :
+            ReadOnlySpan<byte>.Empty;
+
+        byte[] _window;
+        int _windowSize;
+
+        #endregion
+
+        #region "Prepare" method
 
         bool Prepare()
         {
-            _unusedCount = 0;
+            _sleepTimer = 0;
 
-            if (!IsStreamActive)
-            {
-                OpenStream();
-                return false;
-            }
-            else
-            {
-                return true;
-            }
+            if (IsStreamActive) return true;
+
+            OpenStream();
+            return false;
         }
 
-        ReadOnlySpan<float> PrepareAndGetLastFrameWindow()
-        {
-            Prepare();
-            return MemoryMarshal.Cast<byte, float>
-                (new ReadOnlySpan<byte>(_window, 0, _windowSize));
-        }
+        SoundIO.InStream PreparedStream { get { Prepare(); return _stream; } }
 
+        int _sleepTimer;
+
+        #endregion
+
+        #region Allocation/deallocation
+
+        // Factory method
         public static InputDeviceHandle CreateAndOwn(SoundIO.Device device)
+          => new InputDeviceHandle(device);
+
+        // Private constructor
+        InputDeviceHandle(SoundIO.Device device)
         {
-            return new InputDeviceHandle(device);
+            _self = GCHandle.Alloc(this);
+            _device = device;
         }
 
+        // IDisposable implementation
         public void Dispose()
         {
             _stream?.Dispose();
             _stream = null;
 
-            _device.Dispose();
+            _device?.Dispose();
             _device = null;
 
-            _self.Free();
+            if (_self.IsAllocated) _self.Free();
         }
+
+        // A GC handle used to share 'this' pointer with unmanaged code
+        GCHandle _self;
+
+        #endregion
+
+        #region State update methods
 
         public void Update(float deltaTime)
         {
             // Nothing to do when the stream is inactive.
             if (!IsStreamActive) return;
 
-            if (++_unusedCount > 10)
+            // Close the stream when the sleep timer hits the threshold.
+            if (++_sleepTimer > DelayToSleep)
             {
                 CloseStream();
                 return;
             }
 
-            // Last frame window size
+            // Calculate the size of the last-frame window.
             _windowSize =
                 Math.Min(_window.Length, CalculateBufferSize(deltaTime));
 
@@ -114,31 +151,42 @@ namespace Lasp
                 if (_ring.OverflowCount > 0) _ring.Clear();
             }
 
+            // Process the audio data.
             CalculateLevels();
         }
 
-        float [] _audioLevels;
-
         void CalculateLevels()
         {
-            var window = new ReadOnlySpan<byte>(_window, 0, _windowSize);
-            var data = MemoryMarshal.Cast<byte, float>(window);
-            var channels = ChannelCount;
+            if (_windowSize == 0) return;
 
-            if (data.Length == 0) return;
+            var data = MemoryMarshal.Cast<byte, float>
+                (new ReadOnlySpan<byte>(_window, 0, _windowSize));
 
+            var channels = _stream.Layout.ChannelCount;
+
+            // Calculate the per-channel RMS values.
             unsafe
             {
-                var sq_sum = stackalloc float [channels];
-                var offs = 0;
-                for (var i = 0; i < data.Length; i += channels)
-                    for (var j = 0; j < channels; j++, offs++)
-                        sq_sum[j] += data[offs] * data[offs];
+                var acc = stackalloc float[channels];
+
+                for (int i = 0, ch = 0; i < data.Length; i++)
+                {
+                    var v = data[i];
+                    acc[ch] += v * v;
+                    ch = (ch + 1 < channels) ? ch++ : 0;
+                }
 
                 for (var i = 0; i < channels; i++)
-                    _audioLevels[i] = Unity.Mathematics.math.sqrt(sq_sum[i] / data.Length);
+                    _audioLevels[i] = Unity.Mathematics.math.sqrt
+                      (acc[i] * channels / data.Length);
             }
         }
+
+        const int DelayToSleep = 10;
+
+        #endregion
+
+        #region Stream initialization/finalization
 
         void OpenStream()
         {
@@ -194,7 +242,7 @@ namespace Lasp
                 throw;
             }
 
-            _audioLevels = new float[ChannelCount];
+            _audioLevels = new float[_stream.Layout.ChannelCount];
         }
 
         void CloseStream()
@@ -208,37 +256,17 @@ namespace Lasp
 
         #endregion
 
-        #region Private objects
-
-        // A GC handle used to share 'this' pointer with unmanaged code
-        GCHandle _self;
-
-        // SoundIO objects
-        SoundIO.Device _device;
-        SoundIO.InStream _stream;
+        #region Private members
 
         // Input stream ring buffer
         // This object will be accessed from both the main/callback thread.
         // Must be locked when accessing it.
         RingBuffer _ring;
 
-        // Buffer for the last frame window
-        byte[] _window;
-        int _windowSize;
-
-        #endregion
-
-        #region Private properties and methods
-
+        // Calculate a buffer size based on a duration.
         int CalculateBufferSize(float second)
             => (int)(_stream.SampleRate * second) *
                _stream.Layout.ChannelCount * sizeof(float);
-
-        InputDeviceHandle(SoundIO.Device device)
-        {
-            _self = GCHandle.Alloc(this);
-            _device = device;
-        }
 
         #endregion
 

@@ -17,8 +17,8 @@ namespace Lasp
     {
         #region Stream settings
 
-        public int ChannelCount => _deviceHandle.ChannelCount;
-        public int SampleRate => _deviceHandle.SampleRate;
+        public int ChannelCount => _deviceHandle.StreamChannelCount;
+        public int SampleRate => _deviceHandle.StreamSampleRate;
 
         #endregion
 
