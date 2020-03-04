@@ -15,6 +15,12 @@ namespace Lasp
         public bool IsStreamActive
             => _stream != null && !_stream.IsInvalid && !_stream.IsClosed;
 
+        public int ChannelCount
+            => IsStreamActive ? _stream.Layout.ChannelCount : 0;
+
+        public int SampleRate
+            => IsStreamActive ? _stream.SampleRate : 0;
+
         public float Latency
             => IsStreamActive ? (float)_stream.SoftwareLatency : 0;
 

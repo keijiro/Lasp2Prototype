@@ -11,6 +11,9 @@ namespace Lasp
         public DeviceDescriptor Device { get; private set; }
         public FilterType FilterType { get; set; }
 
+        public int ChannelCount => _deviceHandle.ChannelCount;
+        public int SampleRate => _deviceHandle.SampleRate;
+
         public ReadOnlySpan<float> AudioDataSpan
             => MemoryMarshal.Cast<byte, float>(_deviceHandle.LastFrameWindow);
 

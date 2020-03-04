@@ -10,18 +10,21 @@ public sealed class AudioInput : MonoBehaviour
 
     void Start()
     {
-        _stream = Lasp.DeviceManager.GetInputStream(_deviceID);
+        _stream = _useDefaultDevice ?
+            Lasp.DeviceManager.GetDefaultInputStream() :
+            Lasp.DeviceManager.GetInputStream(_deviceID);
     }
 
     void Update()
     {
-        var sq_sum = 0.0f;
-        foreach (var v in _stream.AudioDataSpan) sq_sum += v * v;
-        Debug.Log(Mathf.Sqrt(sq_sum / _stream.AudioDataSpan.Length));
-    }
+        var data = _stream.AudioDataSpan;
+        var stride = _stream.ChannelCount;
 
-    public void NotInUse()
-    {
-        Debug.Log($"{_useDefaultDevice} {_deviceID} {_channel}");
+        var sq_sum = 0.0f;
+        for (var i = _channel; i < data.Length; i += stride)
+            sq_sum += data[i] * data[i];
+        var rms = Mathf.Sqrt(sq_sum / data.Length);
+
+        Debug.Log($"RMS = {rms}");
     }
 }

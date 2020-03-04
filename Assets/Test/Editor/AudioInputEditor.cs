@@ -13,6 +13,7 @@ public sealed class AudioInputEditor : Editor
 
     static class Styles
     {
+        public static GUIContent DefaultDevice = new GUIContent("Default Device");
         public static GUIContent Select = new GUIContent("Select");
     }
 
@@ -48,7 +49,7 @@ public sealed class AudioInputEditor : Editor
     {
         serializedObject.Update();
 
-        EditorGUILayout.PropertyField(_useDefaultDevice);
+        EditorGUILayout.PropertyField(_useDefaultDevice, Styles.DefaultDevice);
 
         if (!_useDefaultDevice.boolValue || _useDefaultDevice.hasMultipleDifferentValues)
         {

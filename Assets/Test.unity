@@ -392,7 +392,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97849e08908d625419dd49a58d6aabfe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _useDefaultDevice: 0
+  _useDefaultDevice: 1
   _deviceID: '{0.0.1.00000000}.{8bbe9077-6f09-449a-a3cc-6648b0ddfcec}'
   _channel: 0
 --- !u!4 &1537017650

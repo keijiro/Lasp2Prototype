@@ -17,6 +17,9 @@ namespace Lasp
         public static InputStream GetInputStream(DeviceDescriptor desc)
             => new InputStream { _deviceHandle = desc._handle };
 
+        public static InputStream GetDefaultInputStream()
+            => new InputStream { _deviceHandle = InputDevices.First()._handle };
+
         public static InputStream GetInputStream(string id)
             => GetInputStream(FindDevice(id));
 
@@ -39,8 +42,14 @@ namespace Lasp
                 for (var i = 0; i < count; i++)
                 {
                     var dev = Context.GetInputDevice(i);
+
                     if (!dev.IsRaw && dev.Layouts.Length > 0)
-                        _inputDevices.Add(InputDeviceHandle.CreateAndOwn(dev));
+                    {
+                        if (i == Context.DefaultInputDeviceIndex)
+                            _inputDevices.Insert(0, InputDeviceHandle.CreateAndOwn(dev));
+                        else
+                            _inputDevices.Add(InputDeviceHandle.CreateAndOwn(dev));
+                    }
                     else
                         dev.Dispose();
                 }
