@@ -15,10 +15,10 @@ namespace Lasp
             => InputDevices.FirstOrDefault(d => d.ID == id);
 
         public static InputStream GetInputStream(DeviceDescriptor desc)
-            => new InputStream { _deviceHandle = desc._handle };
+            => InputStream.Create(desc._handle);
 
         public static InputStream GetDefaultInputStream()
-            => new InputStream { _deviceHandle = InputDevices.First()._handle };
+            => InputStream.Create(InputDevices.First()._handle);
 
         public static InputStream GetInputStream(string id)
             => GetInputStream(FindDevice(id));

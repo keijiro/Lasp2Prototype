@@ -19,10 +19,13 @@ namespace Lasp
 
         public NativeSlice<float> AudioDataSlice => default(NativeSlice<float>);
 
-        public float AudioRmsLevel => 0.0f;
+        public float AudioRmsLevel => _deviceHandle.AudioRmsLevel;
 
-        internal InputDeviceHandle _deviceHandle;
+        InputDeviceHandle _deviceHandle;
 
-        internal InputStream() {}
+        internal static InputStream Create(InputDeviceHandle deviceHandle)
+            => new InputStream { _deviceHandle = deviceHandle };
+
+        InputStream() {}
     }
 }

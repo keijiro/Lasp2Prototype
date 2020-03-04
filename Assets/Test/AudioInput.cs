@@ -17,14 +17,6 @@ public sealed class AudioInput : MonoBehaviour
 
     void Update()
     {
-        var data = _stream.AudioDataSpan;
-        var stride = _stream.ChannelCount;
-
-        var sq_sum = 0.0f;
-        for (var i = _channel; i < data.Length; i += stride)
-            sq_sum += data[i] * data[i];
-        var rms = Mathf.Sqrt(sq_sum / data.Length);
-
-        Debug.Log($"RMS = {rms}");
+        transform.localScale = Vector3.one * _stream.AudioRmsLevel * 10;
     }
 }

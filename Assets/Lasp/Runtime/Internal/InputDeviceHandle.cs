@@ -24,8 +24,23 @@ namespace Lasp
         public float Latency
             => IsStreamActive ? (float)_stream.SoftwareLatency : 0;
 
+        public float AudioRmsLevel => Prepare() ? _audioRmsLevel : 0;
+
         public ReadOnlySpan<byte> LastFrameWindow =>
             PrepareAndGetLastFrameWindow();
+
+        bool Prepare()
+        {
+            if (!IsStreamActive)
+            {
+                OpenStream();
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
 
         ReadOnlySpan<byte> PrepareAndGetLastFrameWindow()
         {
@@ -70,6 +85,24 @@ namespace Lasp
                 // TODO: Is this the best strategy to deal with overflow?
                 if (_ring.OverflowCount > 0) _ring.Clear();
             }
+
+            _audioRmsLevel = CalculateRMS();
+        }
+
+        float _audioRmsLevel;
+
+        float CalculateRMS()
+        {
+            var data = MemoryMarshal.Cast<byte, float>(LastFrameWindow);
+            var stride = ChannelCount;
+
+            if (data.Length == 0) return 0;
+
+            var sq_sum = 0.0f;
+            for (var i = 0; i < data.Length; i += stride)
+                sq_sum += data[i] * data[i];
+
+            return Unity.Mathematics.math.sqrt(sq_sum / data.Length);
         }
 
         public void OpenStream()
