@@ -673,7 +673,7 @@ GameObject:
   - component: {fileID: 1727369987}
   - component: {fileID: 1727369986}
   m_Layer: 0
-  m_Name: Test
+  m_Name: DeviceList
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
