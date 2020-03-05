@@ -46,7 +46,8 @@ namespace Lasp
         InputStream() {} // Hidden constructor
 
         internal static InputStream Create(InputDeviceHandle deviceHandle)
-            => new InputStream { _deviceHandle = deviceHandle };
+          => deviceHandle != null && deviceHandle.IsValid ?
+            new InputStream { _deviceHandle = deviceHandle } : null;
 
         #endregion
     }
