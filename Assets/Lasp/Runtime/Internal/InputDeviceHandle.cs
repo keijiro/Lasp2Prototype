@@ -26,6 +26,7 @@ namespace Lasp
         #region SoundIO device object
 
         public SoundIO.Device SioDevice => _device;
+        public string ID => _device.ID;
         public bool IsValid => _device != null;
 
         SoundIO.Device _device;

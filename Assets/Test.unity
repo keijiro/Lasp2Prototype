@@ -150,8 +150,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97849e08908d625419dd49a58d6aabfe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _useDefaultDevice: 1
-  _deviceID: '{0.0.1.00000000}.{8bbe9077-6f09-449a-a3cc-6648b0ddfcec}'
+  _useDefaultDevice: 0
+  _deviceID: '{0.0.1.00000000}.{79bc5694-7041-4249-a614-f3aef51b9f8a}'
   _channel: 0
 --- !u!4 &138596256
 Transform:
@@ -597,8 +597,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97849e08908d625419dd49a58d6aabfe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _useDefaultDevice: 1
-  _deviceID: '{0.0.1.00000000}.{8bbe9077-6f09-449a-a3cc-6648b0ddfcec}'
+  _useDefaultDevice: 0
+  _deviceID: '{0.0.1.00000000}.{7aebd2a5-751e-48b0-ae77-8e0ce7d58d7a}'
   _channel: 0
 --- !u!4 &1537017650
 Transform:
@@ -644,8 +644,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97849e08908d625419dd49a58d6aabfe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _useDefaultDevice: 1
-  _deviceID: '{0.0.1.00000000}.{8bbe9077-6f09-449a-a3cc-6648b0ddfcec}'
+  _useDefaultDevice: 0
+  _deviceID: '{0.0.1.00000000}.{79bc5694-7041-4249-a614-f3aef51b9f8a}'
   _channel: 0
 --- !u!4 &1722077678
 Transform:

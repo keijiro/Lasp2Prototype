@@ -16,94 +16,40 @@ namespace Lasp
         #region Public members
 
         public static IEnumerable<DeviceDescriptor> InputDevices
-          => EnumerateInputDevices();
+          => InputDeviceList.
+             Select(dev => new DeviceDescriptor { _handle = dev });
 
-        public static DeviceDescriptor FindDevice(string id)
-          => InputDevices.FirstOrDefault(d => d.ID == id);
+        public static DeviceDescriptor FindInputDevice(string id)
+          => new DeviceDescriptor
+             { _handle = InputDeviceList.FirstOrDefault(dev => dev.ID == id) };
 
         public static InputStream GetInputStream(DeviceDescriptor desc)
           => InputStream.Create(desc._handle);
 
         public static InputStream GetDefaultInputStream()
-          => InputStream.Create(InputDevices.First()._handle);
+          => InputStream.Create(InputDeviceList.First());
 
         public static InputStream GetInputStream(string id)
-          => GetInputStream(FindDevice(id));
+          => GetInputStream(FindInputDevice(id));
 
         #endregion
 
-        #region Input device enumeration
-
-        static List<InputDeviceHandle> _inputDevices
-          = new List<InputDeviceHandle>(); 
+        #region Device list management
 
         static bool _shouldScanDevices = true;
 
-        // Scan and return descriptors of the input devices.
-        static IEnumerable<DeviceDescriptor> EnumerateInputDevices()
+        static InputDeviceList InputDeviceList => CheckAndGetInputDeviceList();
+        static InputDeviceList _inputDeviceList = new InputDeviceList();
+
+        static InputDeviceList CheckAndGetInputDeviceList()
         {
             Context.FlushEvents();
-
             if (_shouldScanDevices)
             {
-                ScanInputDevices();
+                _inputDeviceList.ScanAvailable(Context);
                 _shouldScanDevices = false;
             }
-
-            return _inputDevices.
-              Select(dev => new DeviceDescriptor { _handle = dev });
-        }
-
-        // Scan and update the input device list.
-        // It reuses object handles if their bound devices are still there.
-        static void ScanInputDevices()
-        {
-            var deviceCount = Context.InputDeviceCount;
-            var defaultIndex = Context.DefaultInputDeviceIndex;
-
-            var founds = new List<InputDeviceHandle>();
-
-            for (var i = 0; i < deviceCount; i++)
-            {
-                var dev = Context.GetInputDevice(i);
-
-                // Check if the device is useful. Reject it if not.
-                if (dev.IsRaw || dev.Layouts.Length < 1)
-                {
-                    dev.Dispose();
-                    continue;
-                }
-
-                // Find the same device in the current list.
-                var handle =
-                  _inputDevices.FindAndRemove(h => h.SioDevice.ID == dev.ID);
-
-                if (handle != null)
-                {
-                    // We reuse the handle, so this libsoundio device object
-                    // should be disposed.
-                    dev.Dispose();
-                }
-                else
-                {
-                    // Create a new handle with transferring the ownership of
-                    // this libsoundio device object.
-                    handle = InputDeviceHandle.CreateAndOwn(dev);
-                }
-
-                // Default device: Insert it at the head of the list.
-                // Others: Simply append it to the list.
-                if (i == defaultIndex)
-                    founds.Insert(0, handle);
-                else
-                    founds.Add(handle);
-            }
-
-            // Dispose the remained handles (disconnected devices).
-            foreach (var dev in _inputDevices) dev.Dispose();
-
-            // Replace the list with the new one.
-            _inputDevices = founds;
+            return _inputDeviceList;
         }
 
         #endregion
@@ -111,7 +57,6 @@ namespace Lasp
         #region libsoundio context management
 
         static SoundIO.Context Context => GetContextWithLazyInitialization();
-
         static SoundIO.Context _context;
 
         static SoundIO.Context GetContextWithLazyInitialization()
@@ -149,7 +94,7 @@ namespace Lasp
         {
             Context.FlushEvents();
             var dt = UnityEngine.Time.deltaTime;
-            foreach (var dev in _inputDevices) dev.Update(dt);
+            foreach (var dev in _inputDeviceList) dev.Update(dt);
         }
 
         #endregion
