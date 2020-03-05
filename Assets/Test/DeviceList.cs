@@ -14,7 +14,7 @@ class DeviceList : MonoBehaviour
 
     void Update()
     {
-        _label.text = Lasp.DeviceManager.InputDevices.
+        _label.text = Lasp.AudioSystem.InputDevices.
             Select(dev => Describe(dev)).
             Aggregate(string.Empty, (a, b) => a + "\n" + b);
     }

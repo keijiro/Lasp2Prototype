@@ -20,7 +20,7 @@ public sealed class AudioInputEditor : Editor
     void ShowDeviceSelectionDropdown(Rect rect)
     {
         var menu = new GenericMenu();
-        var devices = Lasp.DeviceManager.InputDevices;
+        var devices = Lasp.AudioSystem.InputDevices;
 
         if (devices.Any())
             foreach (var dev in devices)

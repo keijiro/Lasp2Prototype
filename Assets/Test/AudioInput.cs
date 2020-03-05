@@ -11,8 +11,8 @@ public sealed class AudioInput : MonoBehaviour
     void Start()
     {
         _stream = _useDefaultDevice ?
-            Lasp.DeviceManager.GetDefaultInputStream() :
-            Lasp.DeviceManager.GetInputStream(_deviceID);
+            Lasp.AudioSystem.GetDefaultInputStream() :
+            Lasp.AudioSystem.GetInputStream(_deviceID);
     }
 
     void Update()
