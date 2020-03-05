@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
@@ -31,5 +32,17 @@ namespace Lasp
             => new Span<T>
               (NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(array),
                array.Length);
+    }
+
+    static class ListExtensions
+    {
+        public static T FindAndRemove<T>(this List<T> list, Predicate<T> match)
+        {
+            var index = list.FindIndex(match);
+            if (index < 0) return default(T);
+            var res = list[index];
+            list.RemoveAt(index);
+            return res;
+        }
     }
 }

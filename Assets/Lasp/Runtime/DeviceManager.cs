@@ -34,31 +34,54 @@ namespace Lasp
 
             if (_shouldScanDevices)
             {
-                // Reconstruct the device list.
-                foreach (var dev in _inputDevices) dev.Dispose();
-                _inputDevices.Clear();
-
-                var count = Context.InputDeviceCount;
-                for (var i = 0; i < count; i++)
-                {
-                    var dev = Context.GetInputDevice(i);
-
-                    if (!dev.IsRaw && dev.Layouts.Length > 0)
-                    {
-                        if (i == Context.DefaultInputDeviceIndex)
-                            _inputDevices.Insert(0, InputDeviceHandle.CreateAndOwn(dev));
-                        else
-                            _inputDevices.Add(InputDeviceHandle.CreateAndOwn(dev));
-                    }
-                    else
-                        dev.Dispose();
-                }
-
+                ScanDevices();
                 _shouldScanDevices = false;
             }
 
             return _inputDevices.
                 Select(dev => new DeviceDescriptor { _handle = dev });
+        }
+
+
+
+        static void ScanDevices()
+        {
+            var newList = new List<InputDeviceHandle>();
+
+            var count = Context.InputDeviceCount;
+            var defaultIndex = Context.DefaultInputDeviceIndex;
+
+            for (var i = 0; i < count; i++)
+            {
+                var dev = Context.GetInputDevice(i);
+
+                if (dev.IsRaw || dev.Layouts.Length < 1)
+                {
+                    dev.Dispose();
+                    continue;
+                }
+
+                var handle = _inputDevices.FindAndRemove(h => h.SioDevice.ID == dev.ID);
+
+                if (handle != null)
+                {
+                    dev.Dispose();
+                }
+                else
+                {
+                    handle = InputDeviceHandle.CreateAndOwn(dev);
+                }
+
+                if (i == defaultIndex)
+                    newList.Insert(0, handle);
+                else
+                    newList.Add(handle);
+            }
+
+            foreach (var dev in _inputDevices) dev.Dispose();
+            _inputDevices.Clear();
+
+            _inputDevices = newList;
         }
 
         #endregion
