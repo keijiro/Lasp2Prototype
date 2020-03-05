@@ -17,6 +17,7 @@ namespace Lasp
     {
         #region Stream settings
 
+        public bool IsValid => _deviceHandle.IsValid;
         public int ChannelCount => _deviceHandle.StreamChannelCount;
         public int SampleRate => _deviceHandle.StreamSampleRate;
 

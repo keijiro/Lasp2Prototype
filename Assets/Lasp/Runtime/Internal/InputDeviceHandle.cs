@@ -77,6 +77,8 @@ namespace Lasp
 
         bool Prepare()
         {
+            if (!IsValid) throw new InvalidOp("Invalid device");
+
             _sleepTimer = 0;
 
             if (IsStreamActive) return true;

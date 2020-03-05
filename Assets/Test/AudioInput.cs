@@ -17,7 +17,8 @@ public sealed class AudioInput : MonoBehaviour
 
     void Update()
     {
-        transform.localScale =
-            Vector3.one * _stream.GetChannelLevel(_channel) * 10;
+        if (_stream == null || !_stream.IsValid) return;
+        var level = _stream.GetChannelLevel(_channel);
+        transform.localScale = Vector3.one * level * 10;
     }
 }
