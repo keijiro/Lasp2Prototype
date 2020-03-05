@@ -7,18 +7,20 @@ public sealed class AudioInput : MonoBehaviour
     [SerializeField] int _channel = 0;
 
     Lasp.InputStream _stream;
+    Lasp.InputStream Stream => GetAndCacheStream();
 
-    void Start()
+    Lasp.InputStream GetAndCacheStream()
     {
-        _stream = _useDefaultDevice ?
-            Lasp.AudioSystem.GetDefaultInputStream() :
-            Lasp.AudioSystem.GetInputStream(_deviceID);
+        if (_stream == null || !_stream.IsValid)
+            _stream = _useDefaultDevice ?
+              Lasp.AudioSystem.GetDefaultInputStream() :
+              Lasp.AudioSystem.GetInputStream(_deviceID);
+        return _stream;
     }
 
     void Update()
     {
-        if (_stream == null || !_stream.IsValid) return;
-        var level = _stream.GetChannelLevel(_channel);
+        var level = Stream?.GetChannelLevel(_channel) ?? 0;
         transform.localScale = Vector3.one * level * 10;
     }
 }

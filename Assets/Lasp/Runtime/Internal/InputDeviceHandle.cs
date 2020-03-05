@@ -336,7 +336,7 @@ namespace Lasp
         [PInvokeCallback(typeof(SoundIO.InStream.ErrorCallbackDelegate))]
         static void OnErrorInStream
             (ref SoundIO.InStreamData stream, SoundIO.Error error)
-            => UnityEngine.Debug.LogError($"InStream error ({error})");
+            => UnityEngine.Debug.LogWarning($"InStream error ({error})");
 
         #endregion
     }
