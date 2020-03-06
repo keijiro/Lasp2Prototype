@@ -27,7 +27,7 @@ namespace Lasp
           => InputStream.Create(desc._handle);
 
         public static InputStream GetDefaultInputStream()
-          => InputStream.Create(InputDeviceList.First());
+          => InputStream.Create(InputDeviceList.FirstOrDefault());
 
         public static InputStream GetInputStream(string id)
           => GetInputStream(FindInputDevice(id));
