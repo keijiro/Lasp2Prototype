@@ -2,118 +2,119 @@ using UnityEngine;
 
 namespace Lasp
 {
-    // UnityEvent used to drive components with audio level
+    //
+    // UnityEvent used to drive components by audio level
+    //
     [System.Serializable]
     public class AudioLevelEvent : UnityEngine.Events.UnityEvent<float> {}
 
+    //
     // Unity component used to track audio input level and drive other
     // components via UnityEvent
+    //
     [AddComponentMenu("LASP/Audio Level Tracker")]
     public sealed class AudioLevelTracker : MonoBehaviour
     {
-        #region Editable attributes
+        #region Editor-only attributes
 
+        // Device selection
         [SerializeField] bool _useDefaultDevice = true;
         [SerializeField] string _deviceID = "";
+
+        #endregion
+
+        #region Editor attributes and public properties
+
+        // Channel Selection
         [SerializeField] int _channel = 0;
+        public int channel
+          { get => _channel;
+            set => _channel = value; }
 
-
+        // Filter type selection
         [SerializeField] FilterType _filterType = FilterType.Bypass;
+        public FilterType filterType
+          { get => _filterType;
+            set => _filterType = value; }
 
-        public Lasp.FilterType filterType {
-            get { return _filterType; }
-            set { _filterType = value; }
-        }
-
+        // Peak tracking (auto gain) switch
         [SerializeField] bool _peakTracking = true;
+        public bool peakTracking
+          { get => _peakTracking;
+            set => _peakTracking = value; }
 
-        public bool peakTracking {
-            get { return _peakTracking; }
-            set { _peakTracking = value; }
-        }
-
+        // Manual gain (only used when peak tracking is off)
         [SerializeField, Range(-10, 40)] float _gain = 6;
+        public float gain
+          { get => _gain;
+            set => _gain = value; }
 
-        public float gain {
-            get { return _gain; }
-            set { _gain = value; }
-        }
-
+        // Dynamic range in dB
         [SerializeField, Range(1, 40)] float _dynamicRange = 12;
+        public float dynamicRange
+          { get => _dynamicRange;
+            set => _dynamicRange = value; }
 
-        public float dynamicRange {
-            get { return _dynamicRange; }
-            set { _dynamicRange = value; }
-        }
-
+        // "Hold and fall down" animation switch
         [SerializeField] bool _holdAndFallDown = true;
+        public bool holdAndFallDown
+          { get => _holdAndFallDown;
+            set => _holdAndFallDown = value; }
 
-        public bool holdAndFallDown {
-            get { return _holdAndFallDown; }
-            set { _holdAndFallDown = value; }
-        }
-
+        // Fall down animation speed
         [SerializeField, Range(0, 1)] float _fallDownSpeed = 0.3f;
+        public float fallDownSpeed
+          { get => _fallDownSpeed;
+            set => _fallDownSpeed = value; }
 
-        public float fallDownSpeed {
-            get { return _fallDownSpeed; }
-            set { _fallDownSpeed = value; }
-        }
-
-        [SerializeField]
-        AudioLevelEvent _normalizedLevelEvent = new AudioLevelEvent();
-
-        public AudioLevelEvent normalizedLevelEvent {
-            get { return _normalizedLevelEvent; }
-            set { _normalizedLevelEvent = value; }
-        }
+        // Audio level (in normalized scale) output event
+        [SerializeField] AudioLevelEvent _normalizedLevelEvent = null;
+        public AudioLevelEvent normalizedLevelEvent
+          { get => _normalizedLevelEvent;
+            set => _normalizedLevelEvent = value; }
 
         #endregion
 
         #region Runtime public properties and methods
 
-        public float calculatedGain {
-            get { return _peakTracking ? -_peak : _gain; }
-        }
+        // Current input gain value (dB)
+        public float calculatedGain => _peakTracking ? -_peak : _gain;
 
-        public float inputAmplitude {
-            get { return Stream?.GetChannelLevel(_channel, _filterType) ?? kSilence; }
-        }
+        // Unprocessed amplitude value (dB)
+        public float inputAmplitude
+          => Stream?.GetChannelLevel(_channel, _filterType) ?? kSilence;
 
-        public float normalizedLevel {
-            get { return _amplitude; }
-        }
+        // Curent level value in normalized scale
+        public float normalizedLevel => _amplitude;
 
-        public void ResetPeak()
-        {
-            _peak = kSilence;
-        }
+        // Reset the peak value used in auto gain.
+        public void ResetPeak() => _peak = kSilence;
 
         #endregion
 
         #region Private members
 
-        // Silence: Minimum amplitude value
+        // Silence: Minimum amplitude value (dB)
         const float kSilence = -60;
 
-        // Current amplitude value.
+        // Current amplitude value. (dB)
         float _amplitude = kSilence;
 
-        // Variables for automatic gain control.
+        // Variables usd in auto gain.
         float _peak = kSilence;
         float _fall = 0;
 
-    Lasp.InputStream _stream;
-    Lasp.InputStream Stream => GetAndCacheStream();
+        // Input stream object with local cache
+        InputStream Stream
+          => (_stream != null && _stream.IsValid) ? _stream : CacheStream();
 
-    Lasp.InputStream GetAndCacheStream()
-    {
-        if (_stream == null || !_stream.IsValid)
-            _stream = _useDefaultDevice ?
-              Lasp.AudioSystem.GetDefaultInputStream() :
-              Lasp.AudioSystem.GetInputStream(_deviceID);
-        return _stream;
-    }
+        InputStream CacheStream()
+          => (_stream = _useDefaultDevice ?
+               AudioSystem.GetDefaultInputStream() :
+               AudioSystem.GetInputStream(_deviceID));
+
+        InputStream _stream;
+
         #endregion
 
         #region MonoBehaviour implementation
@@ -157,7 +158,7 @@ namespace Lasp
             }
 
             // Output
-            _normalizedLevelEvent.Invoke(_amplitude);
+            _normalizedLevelEvent?.Invoke(_amplitude);
         }
 
         #endregion

@@ -450,7 +450,7 @@ GameObject:
   - component: {fileID: 1796789573}
   - component: {fileID: 1796789572}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: Audio Level Tracker
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
