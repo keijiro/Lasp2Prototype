@@ -1,5 +1,6 @@
 using System;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 
@@ -32,28 +33,27 @@ namespace Lasp
             _filters = new MultibandFilter [channels];
         }
 
-        public void ProcessAudioData(ReadOnlySpan<float> input)
+        public unsafe void ProcessAudioData(ReadOnlySpan<float> input)
         {
             if (input.Length == 0) return;
 
-            using (var tempInput = NativeArrayUtil.NewTempJob(input))
-            using (var tempLevels = NativeArrayUtil.NewTempJob(_levels))
-            using (var tempFilters = NativeArrayUtil.NewTempJob(_filters))
+            // This function is jobified only for the purpose of using the
+            // Burst compiler. We don't need to parallelize it because it will
+            // end up with adding extra cost without making any performance
+            // gain. We rather do it on the main thread as a one-shot job.
+
+            fixed (float* pInput = &input.GetPinnableReference())
+            fixed (MultibandFilter* pFilter = &_filters[0])
+            fixed (float4* pOutput = &_levels[0])
             {
-                // Run the job on the main thread.
-                new FilterRmsJob
-                {
-                    Input    = tempInput,
-                    Filters  = tempFilters,
+                new AudioProcessJob
+                  { Input    = pInput,
+                    Length   = input.Length,
+                    Channels = _levels.Length,
+                    Filters  = pFilter,
                     FilterFc = 960.0f / SampleRate,
                     FilterQ  = 0.15f,
-                    Output   = tempLevels
-                }
-                  .Run(_levels.Length);
-
-                // Retrieve the output from the temporary native arrays.
-                tempLevels.CopyTo(_levels);
-                tempFilters.CopyTo(_filters);
+                    Output   = pOutput }.Run();
             }
         }
 
@@ -62,37 +62,42 @@ namespace Lasp
         #region Signal processing job
 
         [Unity.Burst.BurstCompile]
-        struct FilterRmsJob : IJobFor
+        unsafe struct AudioProcessJob : IJob
         {
-            [ReadOnly] public NativeSlice<float> Input;
+            [NativeDisableUnsafePtrRestriction]
+            public float* Input;
+            public int Length, Channels;
 
-            public NativeArray<MultibandFilter> Filters; // read/write
+            [NativeDisableUnsafePtrRestriction]
+            public MultibandFilter* Filters;
             public float FilterFc, FilterQ;
 
-            [WriteOnly] public NativeArray<float4> Output;
+            [NativeDisableUnsafePtrRestriction]
+            public float4* Output;
 
-            public void Execute(int i)
+            public void Execute()
             {
-                var channels = Output.Length;
-                var filter = Filters[i];
+                var sum = stackalloc float4 [Channels];
 
-                // Filter parameter update
-                filter.SetParameter(FilterFc, FilterQ);
-
-                // Squared sum
-                var sum = float4.zero;
-                for (var offs = i; offs < Input.Length; offs += channels)
+                // Pre-loop initialization
+                for (var ch = 0; ch < Channels; ch++)
                 {
-                    var vf = filter.FeedSample(Input[offs]);
-                    sum += vf * vf;
+                    Filters[ch].SetParameter(FilterFc, FilterQ);
+                    sum[ch] = float4.zero;
                 }
 
-                // Root mean square
-                var rms = math.sqrt(sum / (Input.Length / channels));
+                // Squared sum
+                for (var offs = 0; offs < Length;)
+                    for (var ch = 0; ch < Channels; ch++, offs++)
+                    {
+                        var vf = Filters[ch].FeedSample(Input[offs]);
+                        sum[ch] += vf * vf;
+                    }
 
-                // Output
-                Output[i] = rms;
-                Filters[i] = filter;
+                // RMS
+                var rsteps = math.rcp(Length / Channels);
+                for (var ch = 0; ch < Channels; ch++)
+                    Output[ch] = math.sqrt(sum[ch] * rsteps);
             }
         }
 

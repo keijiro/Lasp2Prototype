@@ -392,8 +392,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97849e08908d625419dd49a58d6aabfe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _useDefaultDevice: 1
-  _deviceID: '{0.0.1.00000000}.{7aebd2a5-751e-48b0-ae77-8e0ce7d58d7a}'
+  _useDefaultDevice: 0
+  _deviceID: '{0.0.1.00000000}.{0e96be25-5456-4786-9e42-9cc8d2fa6c77}'
   _channel: 0
 --- !u!4 &1537017650
 Transform:
