@@ -3,6 +3,9 @@ using Unity.Collections;
 
 namespace Lasp
 {
+    // Filter type enums used in audio input processing
+    public enum FilterType { Bypass, LowPass, BandPass, HighPass }
+
     //
     // Input stream class
     //
