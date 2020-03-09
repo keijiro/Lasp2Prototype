@@ -2,14 +2,14 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 
-namespace Lasp
+namespace Lasp.Editor
 {
     //
     // Custom editor (inspector) for AudioLevelTracker
     //
     [CanEditMultipleObjects]
     [CustomEditor(typeof(AudioLevelTracker))]
-    sealed class AudioLevelTrackerEditor : Editor
+    sealed class AudioLevelTrackerEditor : UnityEditor.Editor
     {
         SerializedProperty _useDefaultDevice;
         SerializedProperty _deviceID;
@@ -24,18 +24,12 @@ namespace Lasp
 
         static class Styles
         {
-            public static GUIContent NoDevice
-              = new GUIContent("No device available");
-            public static GUIContent DefaultDevice
-              = new GUIContent("Default Device");
-            public static GUIContent Select
-              = new GUIContent("Select");
-            public static GUIContent DynamicRange
-              = new GUIContent("Dynamic Range (dB)");
-            public static GUIContent Gain
-              = new GUIContent("Gain (dB)");
-            public static GUIContent Speed
-              = new GUIContent("Speed");
+            public static Label NoDevice      = "No device available";
+            public static Label DefaultDevice = "Default Device";
+            public static Label Select        = "Select";
+            public static Label DynamicRange  = "Dynamic Range (dB)";
+            public static Label Gain          = "Gain (dB)";
+            public static Label Speed         = "Speed";
         }
 
         // Device selection dropdown menu used for setting the device ID
@@ -46,8 +40,7 @@ namespace Lasp
 
             if (devices.Any())
                 foreach (var dev in devices)
-                    menu.AddItem(new GUIContent(dev.Name),
-                                 false, OnSelectDevice, dev.ID);
+                    menu.AddItem(new GUIContent(dev.Name), false, OnSelectDevice, dev.ID);
             else
                 menu.AddItem(Styles.NoDevice, false, null);
 
@@ -64,26 +57,17 @@ namespace Lasp
 
         void OnEnable()
         {
-            _useDefaultDevice
-              = serializedObject.FindProperty("_useDefaultDevice");
-            _deviceID
-              = serializedObject.FindProperty("_deviceID");
-            _channel
-              = serializedObject.FindProperty("_channel");
-            _filterType
-              = serializedObject.FindProperty("_filterType");
-            _dynamicRange
-              = serializedObject.FindProperty("_dynamicRange");
-            _autoGain
-              = serializedObject.FindProperty("_autoGain");
-            _gain
-              = serializedObject.FindProperty("_gain");
-            _holdAndFallDown
-              = serializedObject.FindProperty("_holdAndFallDown");
-            _fallDownSpeed
-              = serializedObject.FindProperty("_fallDownSpeed");
-            _normalizedLevelEvent
-              = serializedObject.FindProperty("_normalizedLevelEvent");
+            var finder = new PropertyFinder(serializedObject);
+            _useDefaultDevice     = finder["_useDefaultDevice"];
+            _deviceID             = finder["_deviceID"];
+            _channel              = finder["_channel"];
+            _filterType           = finder["_filterType"];
+            _dynamicRange         = finder["_dynamicRange"];
+            _autoGain             = finder["_autoGain"];
+            _gain                 = finder["_gain"];
+            _holdAndFallDown      = finder["_holdAndFallDown"];
+            _fallDownSpeed        = finder["_fallDownSpeed"];
+            _normalizedLevelEvent = finder["_normalizedLevelEvent"];
         }
 
         public override bool RequiresConstantRepaint()

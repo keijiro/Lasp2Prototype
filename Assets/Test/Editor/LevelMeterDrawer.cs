@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace Lasp
+namespace Lasp.Editor
 {
     //
     // A utility class for drawing a level meter in the inspector
