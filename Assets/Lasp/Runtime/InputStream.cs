@@ -26,17 +26,25 @@ namespace Lasp
         #region Per-channel audio levels
 
         public float GetChannelLevel(int channel)
-            => _deviceHandle.GetChannelLevel(channel);
+            => MathUtils.dBFS(_deviceHandle.GetChannelLevel(channel).x);
+
+        public float GetChannelLevel(int channel, FilterType filter)
+            => MathUtils.dBFS
+                (_deviceHandle.GetChannelLevel(channel)[(int)filter]);
 
         #endregion
 
-        #region Interleaved audio data (waveform)
+        #region Audio data (waveform)
 
-        public ReadOnlySpan<float> AudioDataSpan
+        public ReadOnlySpan<float> InterleavedDataSpan
             => _deviceHandle.LastFrameWindow;
 
-        public NativeSlice<float> AudioDataSlice
-            => _deviceHandle.LastFrameWindow.GetNativeArray();
+        public NativeSlice<float> InterleavedDataSlice
+            => _deviceHandle.LastFrameWindow.GetNativeSlice();
+
+        public NativeSlice<float> GetChannelDataSlice(int channel)
+            => _deviceHandle.LastFrameWindow.GetNativeSlice
+                (channel, ChannelCount);
 
         #endregion
 

@@ -21,7 +21,7 @@ namespace Lasp
     // calculating them when accessed, and stops calculation when it's not
     // accessed.
     //
-    sealed class InputDeviceHandle : System.IDisposable
+    sealed class InputDeviceHandle : IDisposable
     {
         #region SoundIO device object
 
@@ -51,10 +51,10 @@ namespace Lasp
 
         #region Per-channel audio levels
 
-        public float GetChannelLevel(int channel)
-          => Prepare() ? _audioLevels[channel] : 0;
+        public Unity.Mathematics.float4 GetChannelLevel(int channel)
+          => Prepare() ? _audioLevels.GetLevel(channel) : 0;
 
-        float [] _audioLevels;
+        LevelMeter _audioLevels;
 
         #endregion
 
@@ -155,34 +155,9 @@ namespace Lasp
             }
 
             // Process the audio data.
-            CalculateLevels();
-        }
-
-        void CalculateLevels()
-        {
-            if (_windowSize == 0) return;
-
-            var data = MemoryMarshal.Cast<byte, float>
-                (new ReadOnlySpan<byte>(_window, 0, _windowSize));
-
-            var channels = _stream.Layout.ChannelCount;
-
-            // Calculate the per-channel RMS values.
-            unsafe
-            {
-                var acc = stackalloc float[channels];
-
-                for (int i = 0, ch = 0; i < data.Length; i++)
-                {
-                    var v = data[i];
-                    acc[ch] += v * v;
-                    ch = (ch + 1 < channels) ? ch++ : 0;
-                }
-
-                for (var i = 0; i < channels; i++)
-                    _audioLevels[i] = Unity.Mathematics.math.sqrt
-                      (acc[i] * channels / data.Length);
-            }
+            _audioLevels.ProcessAudioData(
+                MemoryMarshal.Cast<byte, float>(
+                    new ReadOnlySpan<byte>(_window, 0, _windowSize)));
         }
 
         const int DelayToSleep = 10;
@@ -245,7 +220,8 @@ namespace Lasp
                 throw;
             }
 
-            _audioLevels = new float[_stream.Layout.ChannelCount];
+            _audioLevels = new LevelMeter(_stream.Layout.ChannelCount)
+                { SampleRate = _stream.SampleRate };
         }
 
         void CloseStream()
