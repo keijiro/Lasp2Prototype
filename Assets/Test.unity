@@ -485,7 +485,7 @@ MonoBehaviour:
   _deviceID: 
   _channel: 0
   _filterType: 0
-  _peakTracking: 1
+  _autoGain: 1
   _gain: 6
   _dynamicRange: 12
   _holdAndFallDown: 1

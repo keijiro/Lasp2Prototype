@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Lasp
 {
     //
-    // UnityEvent used to drive components by audio level
+    // A UnityEvent class used to drive components by audio level
     //
     [System.Serializable]
     public class AudioLevelEvent : UnityEngine.Events.UnityEvent<float> {}
@@ -37,13 +37,13 @@ namespace Lasp
           { get => _filterType;
             set => _filterType = value; }
 
-        // Peak tracking (auto gain) switch
-        [SerializeField] bool _peakTracking = true;
-        public bool peakTracking
-          { get => _peakTracking;
-            set => _peakTracking = value; }
+        // Auto gain control switch
+        [SerializeField] bool _autoGain = true;
+        public bool autoGain
+          { get => _autoGain;
+            set => _autoGain = value; }
 
-        // Manual gain (only used when peak tracking is off)
+        // Manual input gain (only used when auto gain is off)
         [SerializeField, Range(-10, 40)] float _gain = 6;
         public float gain
           { get => _gain;
@@ -67,7 +67,7 @@ namespace Lasp
           { get => _fallDownSpeed;
             set => _fallDownSpeed = value; }
 
-        // Audio level (in normalized scale) output event
+        // Audio level (in the normalized scale) output event
         [SerializeField] AudioLevelEvent _normalizedLevelEvent = null;
         public AudioLevelEvent normalizedLevelEvent
           { get => _normalizedLevelEvent;
@@ -77,31 +77,33 @@ namespace Lasp
 
         #region Runtime public properties and methods
 
-        // Current input gain value (dB)
-        public float calculatedGain => _peakTracking ? -_peak : _gain;
+        // Current input gain (dB)
+        public float currentGain => _autoGain ? -_head : _gain;
 
-        // Unprocessed amplitude value (dB)
-        public float inputAmplitude
+        // Unprocessed input level (dBFS)
+        public float inputLevel
           => Stream?.GetChannelLevel(_channel, _filterType) ?? kSilence;
 
-        // Curent level value in normalized scale
-        public float normalizedLevel => _amplitude;
+        // Curent level in the normalized scale
+        public float normalizedLevel => _normalizedLevel;
 
-        // Reset the peak value used in auto gain.
-        public void ResetPeak() => _peak = kSilence;
+        // Reset the auto gain state.
+        public void ResetAutoGain() => _head = kSilence;
 
         #endregion
 
         #region Private members
 
-        // Silence: Minimum amplitude value (dB)
+        // Silence: Locally defined noise floor level (dBFS)
         const float kSilence = -60;
 
-        // Current amplitude value. (dB)
-        float _amplitude = kSilence;
+        // Current normalized level value
+        float _normalizedLevel = 0;
 
-        // Variables usd in auto gain.
-        float _peak = kSilence;
+        // Nominal level of auto gain (recent maximum level)
+        float _head = kSilence;
+
+        // Hold and fall down animation parameter
         float _fall = 0;
 
         // Input stream object with local cache
@@ -121,44 +123,45 @@ namespace Lasp
 
         void Update()
         {
-            var input = inputAmplitude;
+            var input = inputLevel;
             var dt = Time.deltaTime;
 
-            // Automatic gain control
-            if (_peakTracking)
+            // Auto gain control
+            if (_autoGain)
             {
-                // Gradually falls down to the minimum amplitude.
-                const float peakFallSpeed = 0.6f;
-                _peak = Mathf.Max(_peak - peakFallSpeed * dt, kSilence);
+                // Slowly return to the noise floor.
+                const float kDecaySpeed = 0.6f;
+                _head = Mathf.Max(_head - kDecaySpeed * dt, kSilence);
 
-                // Pull up by input with allowing a small amount of clipping.
-                var clip = _dynamicRange * 0.05f;
-                _peak = Mathf.Clamp(input - clip, _peak, 0);
+                // Pull up by input with a small headroom.
+                var room = _dynamicRange * 0.05f;
+                _head = Mathf.Clamp(input - room, _head, 0);
             }
 
             // Normalize the input value.
-            input = Mathf.Clamp01((input + calculatedGain) / _dynamicRange + 1);
+            var normalizedInput
+              = Mathf.Clamp01((input + currentGain) / _dynamicRange + 1);
 
             if (_holdAndFallDown)
             {
-                // Hold-and-fall-down animation.
+                // Hold and fall down animation
                 _fall += Mathf.Pow(10, 1 + _fallDownSpeed * 2) * dt;
-                _amplitude -= _fall * dt;
+                _normalizedLevel -= _fall * dt;
 
                 // Pull up by input.
-                if (_amplitude < input)
+                if (_normalizedLevel < normalizedInput)
                 {
-                    _amplitude = input;
+                    _normalizedLevel = normalizedInput;
                     _fall = 0;
                 }
             }
             else
             {
-                _amplitude = input;
+                _normalizedLevel = normalizedInput;
             }
 
             // Output
-            _normalizedLevelEvent?.Invoke(_amplitude);
+            _normalizedLevelEvent?.Invoke(_normalizedLevel);
         }
 
         #endregion
