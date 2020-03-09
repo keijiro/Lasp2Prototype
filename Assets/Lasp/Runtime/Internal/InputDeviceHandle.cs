@@ -65,8 +65,8 @@ namespace Lasp
 
         ReadOnlySpan<byte> LastFrameWindowRaw
           => Prepare() ?
-            new ReadOnlySpan<byte>(_window, 0, _windowSize) :
-            ReadOnlySpan<byte>.Empty;
+             new ReadOnlySpan<byte>(_window, 0, _windowSize) :
+             ReadOnlySpan<byte>.Empty;
 
         byte[] _window;
         int _windowSize;
@@ -155,9 +155,9 @@ namespace Lasp
             }
 
             // Process the audio data.
-            _audioLevels.ProcessAudioData(
-                MemoryMarshal.Cast<byte, float>(
-                    new ReadOnlySpan<byte>(_window, 0, _windowSize)));
+            _audioLevels.ProcessAudioData
+              (MemoryMarshal.Cast<byte, float>
+                (new ReadOnlySpan<byte>(_window, 0, _windowSize)));
         }
 
         const int DelayToSleep = 10;
@@ -221,7 +221,7 @@ namespace Lasp
             }
 
             _audioLevels = new LevelMeter(_stream.Layout.ChannelCount)
-                { SampleRate = _stream.SampleRate };
+              { SampleRate = _stream.SampleRate };
         }
 
         void CloseStream()
@@ -244,29 +244,29 @@ namespace Lasp
 
         // Calculate a buffer size based on a duration.
         int CalculateBufferSize(float second)
-            => (int)(_stream.SampleRate * second) *
-               _stream.Layout.ChannelCount * sizeof(float);
+          => (int)(_stream.SampleRate * second) *
+             _stream.Layout.ChannelCount * sizeof(float);
 
         #endregion
 
         #region SoundIO callback delegates
 
         static SoundIO.InStream.ReadCallbackDelegate
-            _readCallback = OnReadInStream;
+          _readCallback = OnReadInStream;
 
         static SoundIO.InStream.OverflowCallbackDelegate
-            _overflowCallback = OnOverflowInStream;
+          _overflowCallback = OnOverflowInStream;
 
         static SoundIO.InStream.ErrorCallbackDelegate
-            _errorCallback = OnErrorInStream;
+          _errorCallback = OnErrorInStream;
 
         [PInvokeCallback(typeof(SoundIO.InStream.ReadCallbackDelegate))]
         unsafe static void OnReadInStream
-            (ref SoundIO.InStreamData stream, int min, int left)
+          (ref SoundIO.InStreamData stream, int min, int left)
         {
             // Recover the 'this' reference from the UserData pointer.
             var self = (InputDeviceHandle)
-                GCHandle.FromIntPtr(stream.UserData).Target;
+              GCHandle.FromIntPtr(stream.UserData).Target;
 
             while (left > 0)
             {
@@ -283,17 +283,15 @@ namespace Lasp
                 {
                     // We must do zero-fill when receiving a null pointer.
                     lock (self._ring)
-                        self._ring.WriteEmpty(stream.BytesPerFrame * count);
+                      self._ring.WriteEmpty(stream.BytesPerFrame * count);
                 }
                 else
                 {
                     // Determine the memory span of the input data with
                     // assuming the data is tightly packed.
                     // TODO: Is this assumption always true?
-                    var span = new ReadOnlySpan<Byte>(
-                        (void*)areas[0].Pointer,
-                        areas[0].Step * count
-                    );
+                    var span = new ReadOnlySpan<Byte>
+                      ((void*)areas[0].Pointer, areas[0].Step * count);
 
                     // Transfer the data to the ring buffer.
                     lock (self._ring) self._ring.Write(span);
@@ -307,12 +305,12 @@ namespace Lasp
 
         [PInvokeCallback(typeof(SoundIO.InStream.OverflowCallbackDelegate))]
         static void OnOverflowInStream(ref SoundIO.InStreamData stream)
-            => UnityEngine.Debug.LogWarning("InStream overflow");
+          => UnityEngine.Debug.LogWarning("InStream overflow");
 
         [PInvokeCallback(typeof(SoundIO.InStream.ErrorCallbackDelegate))]
         static void OnErrorInStream
-            (ref SoundIO.InStreamData stream, SoundIO.Error error)
-            => UnityEngine.Debug.LogWarning($"InStream error ({error})");
+          (ref SoundIO.InStreamData stream, SoundIO.Error error)
+          => UnityEngine.Debug.LogWarning($"InStream error ({error})");
 
         #endregion
     }
