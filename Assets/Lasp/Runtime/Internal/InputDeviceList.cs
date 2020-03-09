@@ -77,6 +77,11 @@ namespace Lasp
             _list = founds;
         }
 
+        public void UpdateAll(float deltaTime)
+        {
+            foreach (var h in _list) h.Update(deltaTime);
+        }
+
         #endregion
     }
 }

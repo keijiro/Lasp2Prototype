@@ -93,8 +93,7 @@ namespace Lasp
         static void Update()
         {
             Context.FlushEvents();
-            var dt = UnityEngine.Time.deltaTime;
-            foreach (var dev in _inputDeviceList) dev.Update(dt);
+            _inputDeviceList.UpdateAll(UnityEngine.Time.deltaTime);
         }
 
         #endregion
