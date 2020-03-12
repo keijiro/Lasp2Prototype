@@ -12,8 +12,11 @@ namespace Lasp
     [System.Serializable]
     public abstract class PropertyBinder
     {
+        // Enable switch
+        [SerializeField] bool _enabled = true;
+
         // Audio level property (setter only)
-        public float Level { set { OnSetLevel(value); } }
+        public float Level { set { if (_enabled) OnSetLevel(value); } }
 
         // Binder implementation
         protected abstract void OnSetLevel(float level);
