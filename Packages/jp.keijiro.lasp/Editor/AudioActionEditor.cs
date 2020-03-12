@@ -10,6 +10,12 @@ namespace Lasp.Editor
 
         SerializedProperty _actions;
 
+        static class Styles
+        {
+            public static Label Value0 = "Value at 0";
+            public static Label Value1 = "Value at 1";
+        }
+
         void OnEnable()
         {
             _actions = serializedObject.FindProperty("_binders");
@@ -26,10 +32,17 @@ namespace Lasp.Editor
                 var element = _actions.GetArrayElementAtIndex(i);
                 var typename = element.managedReferenceFullTypename;
 
-                EditorGUILayout.PropertyField(element.FindPropertyRelative("_target"));
-                EditorGUILayout.PropertyField(element.FindPropertyRelative("_propertyName"));
-                EditorGUILayout.PropertyField(element.FindPropertyRelative("_value0"));
-                EditorGUILayout.PropertyField(element.FindPropertyRelative("_value1"));
+                EditorGUILayout.PropertyField
+                  (element.FindPropertyRelative("_target"));
+
+                EditorGUILayout.PropertyField
+                  (element.FindPropertyRelative("_propertyName"));
+
+                EditorGUILayout.PropertyField
+                  (element.FindPropertyRelative("_value0"), Styles.Value0);
+
+                EditorGUILayout.PropertyField
+                  (element.FindPropertyRelative("_value1"), Styles.Value1);
             }
 
             serializedObject.ApplyModifiedProperties();
