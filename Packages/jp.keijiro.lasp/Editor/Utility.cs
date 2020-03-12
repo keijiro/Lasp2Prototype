@@ -15,7 +15,7 @@ namespace Lasp.Editor
           => new Label { _guiContent = new GUIContent(text) };
     }
 
-    // Utility for finding serialized properties
+    // Utilities for finding serialized properties
     struct PropertyFinder
     {
         SerializedObject _so;
@@ -23,5 +23,15 @@ namespace Lasp.Editor
         public PropertyFinder(SerializedObject so) => _so = so;
 
         public SerializedProperty this[string name] => _so.FindProperty(name);
+    }
+
+    struct RelativePropertyFinder
+    {
+        SerializedProperty _sp;
+
+        public RelativePropertyFinder(SerializedProperty sp) => _sp = sp;
+
+        public SerializedProperty this[string name]
+          => _sp.FindPropertyRelative(name);
     }
 }

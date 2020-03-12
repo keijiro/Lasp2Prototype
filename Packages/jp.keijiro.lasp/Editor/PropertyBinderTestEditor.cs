@@ -3,8 +3,8 @@ using UnityEditor;
 
 namespace Lasp.Editor
 {
-    [CustomEditor(typeof(ActionTest))]
-    sealed class AudioActionEditor : UnityEditor.Editor
+    [CustomEditor(typeof(PropertyBinderTest))]
+    sealed class PropertyBinderTestEditor : UnityEditor.Editor
     {
         #region Inspector implementation
 
@@ -18,7 +18,8 @@ namespace Lasp.Editor
 
         void OnEnable()
         {
-            _actions = serializedObject.FindProperty("_binders");
+            var finder = new PropertyFinder(serializedObject);
+            _actions = finder["_binders"];
         }
 
         public override void OnInspectorGUI()
@@ -31,18 +32,12 @@ namespace Lasp.Editor
 
                 var element = _actions.GetArrayElementAtIndex(i);
                 var typename = element.managedReferenceFullTypename;
+                var finder = new RelativePropertyFinder(element);
 
-                EditorGUILayout.PropertyField
-                  (element.FindPropertyRelative("_target"));
-
-                EditorGUILayout.PropertyField
-                  (element.FindPropertyRelative("_propertyName"));
-
-                EditorGUILayout.PropertyField
-                  (element.FindPropertyRelative("_value0"), Styles.Value0);
-
-                EditorGUILayout.PropertyField
-                  (element.FindPropertyRelative("_value1"), Styles.Value1);
+                EditorGUILayout.PropertyField(finder["_target"]);
+                EditorGUILayout.PropertyField(finder["_propertyName"]);
+                EditorGUILayout.PropertyField(finder["_value0"], Styles.Value0);
+                EditorGUILayout.PropertyField(finder["_value1"], Styles.Value1);
             }
 
             serializedObject.ApplyModifiedProperties();

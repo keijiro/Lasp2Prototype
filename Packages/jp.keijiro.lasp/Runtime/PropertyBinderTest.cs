@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Lasp
 {
-    public sealed class ActionTest : MonoBehaviour
+    public sealed class PropertyBinderTest : MonoBehaviour
     {
         [SerializeReference] PropertyBinder [] _binders = null;
 
