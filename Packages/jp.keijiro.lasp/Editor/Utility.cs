@@ -40,13 +40,18 @@ namespace Lasp.Editor
 
     static class PropertyBinderNameUtil
     {
-        public static string Shorten<T>()
-          => ObjectNames.NicifyVariableName(typeof(T).Name)
-             .Replace("Property Binder", "");
-
         public static string Shorten(SerializedProperty prop)
-          => prop.managedReferenceFullTypename
-             .Replace("Lasp.Runtime Lasp.", "")
-             .Replace("PropertyBinder", "");
+          => ObjectNames.NicifyVariableName(
+               prop.managedReferenceFullTypename
+               .Replace("Lasp.Runtime Lasp.", "")
+               .Replace("PropertyBinder", ""));
+    }
+
+    static class PropertyBinderTypeLabel<T>
+    {
+        static public GUIContent Content => _gui;
+        static GUIContent _gui = new GUIContent
+          (ObjectNames.NicifyVariableName(typeof(T).Name)
+             .Replace("Property Binder", ""));
     }
 }

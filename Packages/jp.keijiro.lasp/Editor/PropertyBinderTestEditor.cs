@@ -12,8 +12,11 @@ namespace Lasp.Editor
 
         static class Styles
         {
-            public static Label Value0 = "Value at 0";
-            public static Label Value1 = "Value at 1";
+            public static Label Value0   = "Value at 0";
+            public static Label Value1   = "Value at 1";
+            public static Label MoveUp   = "Move Up";
+            public static Label MoveDown = "Move Down";
+            public static Label Remove   = "Remove";
         }
 
         void OnEnable()
@@ -27,10 +30,7 @@ namespace Lasp.Editor
             serializedObject.Update();
 
             for (var i = 0; i < _binders.arraySize; i++)
-            {
-                CoreEditorUtils.DrawSplitter();
-                ShowPropertyBinder(_binders.GetArrayElementAtIndex(i));
-            }
+                ShowPropertyBinderEditor(i);
 
             serializedObject.ApplyModifiedProperties();
 
@@ -47,50 +47,101 @@ namespace Lasp.Editor
 
         #endregion
 
-        #region Methods for property binders
+        #region "Add Property Binder" button
 
-        void ShowPropertyBinder(SerializedProperty prop)
+        GenericMenu CreateNewPropertyBinderMenu()
         {
+            var menu = new GenericMenu();
+            AddNewPropertyBinderItem<        FloatPropertyBinder>(menu);
+            AddNewPropertyBinderItem<      Vector3PropertyBinder>(menu);
+            AddNewPropertyBinderItem<EulerRotationPropertyBinder>(menu);
+            AddNewPropertyBinderItem<        ColorPropertyBinder>(menu);
+            return menu;
+        }
+
+        void AddNewPropertyBinderItem<T>(GenericMenu menu) where T : new()
+          => menu.AddItem(PropertyBinderTypeLabel<T>.Content,
+                          false, OnAddNewPropertyBinder<T>);
+
+        void OnAddNewPropertyBinder<T>() where T : new()
+        {
+            serializedObject.Update();
+
+            var i = _binders.arraySize;
+            _binders.InsertArrayElementAtIndex(i);
+            _binders.GetArrayElementAtIndex(i).managedReferenceValue = new T();
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        #endregion
+
+        #region PropertyBinder editor
+
+        void ShowPropertyBinderEditor(int index)
+        {
+            var prop = _binders.GetArrayElementAtIndex(index);
             var finder = new RelativePropertyFinder(prop);
+
+            // Header
+            CoreEditorUtils.DrawSplitter();
 
             var toggle = CoreEditorUtils.DrawHeaderToggle
               (PropertyBinderNameUtil.Shorten(prop),
-               prop, finder["_enabled"], pos => {});
+               prop, finder["_enabled"],
+               pos => CreateHeaderContextMenu(index)
+                      .DropDown(new Rect(pos, Vector2.zero)));
 
             if (!toggle) return;
 
+            // Properties
             EditorGUILayout.PropertyField(finder["_target"]);
             EditorGUILayout.PropertyField(finder["_propertyName"]);
             EditorGUILayout.PropertyField(finder["_value0"], Styles.Value0);
             EditorGUILayout.PropertyField(finder["_value1"], Styles.Value1);
         }
 
-        GenericMenu CreateNewPropertyBinderMenu()
+        #endregion
+
+        #region ProeprtyBinder editor context menu
+
+        GenericMenu CreateHeaderContextMenu(int index)
         {
             var menu = new GenericMenu();
-            AddPropertyBinderItem<        FloatPropertyBinder>(menu);
-            AddPropertyBinderItem<      Vector3PropertyBinder>(menu);
-            AddPropertyBinderItem<EulerRotationPropertyBinder>(menu);
-            AddPropertyBinderItem<        ColorPropertyBinder>(menu);
+
+            // Move up
+            if (index == 0)
+                menu.AddDisabledItem(Styles.MoveUp);
+            else
+                menu.AddItem(Styles.MoveUp, false,
+                             () => OnMoveControl(index, index - 1));
+
+            // Move down
+            if (index == _binders.arraySize - 1)
+                menu.AddDisabledItem(Styles.MoveDown);
+            else
+                menu.AddItem(Styles.MoveDown, false,
+                             () => OnMoveControl(index, index + 1));
+
+            menu.AddSeparator(string.Empty);
+
+            // Remove
+            menu.AddItem(Styles.Remove, false, () => OnRemoveControl(index));
+
             return menu;
         }
 
-        void AddPropertyBinderItem<T>(GenericMenu menu)
-         => menu.AddItem(new GUIContent(PropertyBinderNameUtil.Shorten<T>()),
-                         false, OnAddPropertyBinder, typeof(T));
-
-        void OnAddPropertyBinder(object type)
+        void OnMoveControl(int src, int dst)
         {
-            // Binder instance creation
-            var binder = System.Activator.CreateInstance((System.Type)type);
-
             serializedObject.Update();
+            _binders.MoveArrayElement(src, dst);
+            serializedObject.ApplyModifiedProperties();
+        }
 
-            // Add to the binder array.
-            var i = _binders.arraySize;
-            _binders.InsertArrayElementAtIndex(i);
-            _binders.GetArrayElementAtIndex(i).managedReferenceValue = binder;
-
+        void OnRemoveControl(int index)
+        {
+            serializedObject.Update();
+            _binders.DeleteArrayElementAtIndex(index);
             serializedObject.ApplyModifiedProperties();
         }
 
