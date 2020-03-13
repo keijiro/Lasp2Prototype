@@ -26,7 +26,7 @@ namespace Lasp
     public abstract class GenericPropertyBinder<T> : PropertyBinder
     {
         // Serialized target property information
-        [SerializeField] Object _target = null;
+        [SerializeField] Component _target = null;
         [SerializeField] string _propertyName = null;
 
         // Target property setter
