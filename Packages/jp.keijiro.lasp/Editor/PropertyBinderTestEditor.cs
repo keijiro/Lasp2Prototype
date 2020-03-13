@@ -54,7 +54,8 @@ namespace Lasp.Editor
             var finder = new RelativePropertyFinder(prop);
 
             var toggle = CoreEditorUtils.DrawHeaderToggle
-              (prop.managedReferenceFullTypename, prop, finder["_enabled"], pos => {});
+              (PropertyBinderNameUtil.Shorten(prop),
+               prop, finder["_enabled"], pos => {});
 
             if (!toggle) return;
 
@@ -75,12 +76,8 @@ namespace Lasp.Editor
         }
 
         void AddPropertyBinderItem<T>(GenericMenu menu)
-        {
-            var prettyName = ObjectNames.NicifyVariableName(typeof(T).Name);
-            var shortName = prettyName.Replace("Property Binder", "");
-            menu.AddItem(new GUIContent(shortName),
+         => menu.AddItem(new GUIContent(PropertyBinderNameUtil.Shorten<T>()),
                          false, OnAddPropertyBinder, typeof(T));
-        }
 
         void OnAddPropertyBinder(object type)
         {

@@ -20,18 +20,33 @@ namespace Lasp.Editor
     {
         SerializedObject _so;
 
-        public PropertyFinder(SerializedObject so) => _so = so;
+        public PropertyFinder(SerializedObject so)
+          => _so = so;
 
-        public SerializedProperty this[string name] => _so.FindProperty(name);
+        public SerializedProperty this[string name]
+          => _so.FindProperty(name);
     }
 
     struct RelativePropertyFinder
     {
         SerializedProperty _sp;
 
-        public RelativePropertyFinder(SerializedProperty sp) => _sp = sp;
+        public RelativePropertyFinder(SerializedProperty sp)
+          => _sp = sp;
 
         public SerializedProperty this[string name]
           => _sp.FindPropertyRelative(name);
+    }
+
+    static class PropertyBinderNameUtil
+    {
+        public static string Shorten<T>()
+          => ObjectNames.NicifyVariableName(typeof(T).Name)
+             .Replace("Property Binder", "");
+
+        public static string Shorten(SerializedProperty prop)
+          => prop.managedReferenceFullTypename
+             .Replace("Lasp.Runtime Lasp.", "")
+             .Replace("PropertyBinder", "");
     }
 }
