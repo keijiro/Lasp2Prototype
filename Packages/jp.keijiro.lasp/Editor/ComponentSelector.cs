@@ -6,39 +6,37 @@ namespace Lasp.Editor
 {
     sealed class ComponentSelector
     {
-        public void ShowUI(SerializedProperty sp)
-        {
-            EditorGUILayout.PropertyField(sp);
-
-            CacheSiblingComponents(sp);
-
-            // Component selection drop-down
-            EditorGUI.BeginChangeCheck();
-
-            var index = System.Array.IndexOf(_componentNames, sp.objectReferenceValue.GetType().Name);
-            index = EditorGUILayout.Popup("Component", index, _componentNames);
-
-            if (EditorGUI.EndChangeCheck())
-                sp.objectReferenceValue =
-                    ((Component)sp.objectReferenceValue).gameObject.GetComponent(_componentNames[index]);
-
-         //   MoveRectToNextLine();
-        }
-
         string [] _componentNames;
         GameObject _cachedGameObject;
 
-        // Enumerate components in the same game object that the target
-        // component is attached to.
-        void CacheSiblingComponents(SerializedProperty sp)
+        public void ShowUI(SerializedProperty sp)
         {
-            var go = (sp.objectReferenceValue as Component)?.gameObject;
-            if (_cachedGameObject == go) return;
+            // Target component field edit
+            EditorGUILayout.PropertyField(sp);
 
-            _componentNames = go.GetComponents<Component>().
-                Select(x => x.GetType().Name).ToArray();
+            // Show the following controls only when the component exists.
+            var component = sp.objectReferenceValue as Component;
+            if (component == null) return;
 
-            _cachedGameObject = go;
+            // Cache the component condidates.
+            var gameObject = component.gameObject;
+            if (gameObject != _cachedGameObject)
+            {
+                _componentNames = gameObject.GetComponents<Component>()
+                                  .Select(x => x.GetType().Name).ToArray();
+                _cachedGameObject = gameObject;
+            }
+
+            // Current selection
+            var index = System.Array.IndexOf
+                        (_componentNames, component.GetType().Name);
+
+            // Component selection drop down
+            EditorGUI.BeginChangeCheck();
+            index = EditorGUILayout.Popup("Component", index, _componentNames);
+            if (EditorGUI.EndChangeCheck())
+                sp.objectReferenceValue =
+                    gameObject.GetComponent(_componentNames[index]);
         }
     }
 }
