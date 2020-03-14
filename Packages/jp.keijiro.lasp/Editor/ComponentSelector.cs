@@ -1,42 +1,44 @@
 using UnityEngine;
 using UnityEditor;
+using System;
 using System.Linq;
 
 namespace Lasp.Editor
 {
     sealed class ComponentSelector
     {
-        string [] _componentNames;
-        GameObject _cachedGameObject;
-
-        public void ShowUI(SerializedProperty sp)
+        public bool ShowUI(SerializedProperty spTarget)
         {
-            // Target component field edit
-            EditorGUILayout.PropertyField(sp);
+            // Target component field
+            EditorGUILayout.PropertyField(spTarget);
 
             // Show the following controls only when the component exists.
-            var component = sp.objectReferenceValue as Component;
-            if (component == null) return;
+            var component = spTarget.objectReferenceValue as Component;
+            if (component == null) return false;
 
-            // Cache the component condidates.
+            // Candidate enumeration
             var gameObject = component.gameObject;
             if (gameObject != _cachedGameObject)
             {
-                _componentNames = gameObject.GetComponents<Component>()
-                                  .Select(x => x.GetType().Name).ToArray();
+                _candidates = gameObject.GetComponents<Component>()
+                  .Select(x => x.GetType().Name).ToArray();
                 _cachedGameObject = gameObject;
             }
 
             // Current selection
-            var index = System.Array.IndexOf
-                        (_componentNames, component.GetType().Name);
+            var index = Array.IndexOf(_candidates, component.GetType().Name);
 
             // Component selection drop down
             EditorGUI.BeginChangeCheck();
-            index = EditorGUILayout.Popup("Component", index, _componentNames);
+            index = EditorGUILayout.Popup("Component", index, _candidates);
             if (EditorGUI.EndChangeCheck())
-                sp.objectReferenceValue =
-                    gameObject.GetComponent(_componentNames[index]);
+                spTarget.objectReferenceValue =
+                  gameObject.GetComponent(_candidates[index]);
+
+            return true;
         }
+
+        GameObject _cachedGameObject;
+        string [] _candidates;
     }
 }

@@ -11,6 +11,7 @@ namespace Lasp.Editor
         SerializedProperty _binders;
 
         ComponentSelector _componentSelector = new ComponentSelector();
+        PropertySelector _propertySelector = new PropertySelector();
 
         static class Styles
         {
@@ -97,11 +98,16 @@ namespace Lasp.Editor
             if (!toggle) return;
 
             // Properties
-            //EditorGUILayout.PropertyField(finder["_target"]);
-            _componentSelector.ShowUI(finder["_target"]);
-            EditorGUILayout.PropertyField(finder["_propertyName"]);
-            EditorGUILayout.PropertyField(finder["_value0"], Styles.Value0);
-            EditorGUILayout.PropertyField(finder["_value1"], Styles.Value1);
+            if (_componentSelector.ShowUI(finder["_target"]))
+            {
+                if (_propertySelector.ShowUI(finder["_target"],
+                                             finder["_propertyType"],
+                                             finder["_propertyName"]))
+                {
+                    EditorGUILayout.PropertyField(finder["_value0"], Styles.Value0);
+                    EditorGUILayout.PropertyField(finder["_value1"], Styles.Value1);
+                }
+            }
         }
 
         #endregion

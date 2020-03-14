@@ -29,6 +29,11 @@ namespace Lasp
         [SerializeField] Component _target = null;
         [SerializeField] string _propertyName = null;
 
+        // This field in only used in Editor to determine the target property
+        // type. Don't modify it after instantiation.
+        [SerializeField, HideInInspector] string _propertyType
+          = typeof(T).AssemblyQualifiedName;
+
         // Target property setter
         protected T TargetProperty { set => SetTargetProperty(value); }
 
