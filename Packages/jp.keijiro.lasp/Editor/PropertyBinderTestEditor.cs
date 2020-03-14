@@ -10,9 +10,6 @@ namespace Lasp.Editor
 
         SerializedProperty _binders;
 
-        ComponentSelector _componentSelector = new ComponentSelector();
-        PropertySelector _propertySelector = new PropertySelector();
-
         static class Styles
         {
             public static Label Value0   = "Value at 0";
@@ -26,6 +23,8 @@ namespace Lasp.Editor
         {
             var finder = new PropertyFinder(serializedObject);
             _binders = finder["_binders"];
+
+            ComponentSelector.InvalidateCache();
         }
 
         public override void OnInspectorGUI()
@@ -98,15 +97,15 @@ namespace Lasp.Editor
             if (!toggle) return;
 
             // Properties
-            if (_componentSelector.ShowUI(finder["_target"]))
+            var target = finder["_target"];
+            EditorGUILayout.PropertyField(target);
+
+            if (ComponentSelector.GetInstance(target).ShowGUI(target) &&
+                PropertySelector.GetInstance(target, finder["_propertyType"])
+                .ShowGUI(finder["_propertyName"]))
             {
-                if (_propertySelector.ShowUI(finder["_target"],
-                                             finder["_propertyType"],
-                                             finder["_propertyName"]))
-                {
-                    EditorGUILayout.PropertyField(finder["_value0"], Styles.Value0);
-                    EditorGUILayout.PropertyField(finder["_value1"], Styles.Value1);
-                }
+                EditorGUILayout.PropertyField(finder["_value0"], Styles.Value0);
+                EditorGUILayout.PropertyField(finder["_value1"], Styles.Value1);
             }
         }
 
