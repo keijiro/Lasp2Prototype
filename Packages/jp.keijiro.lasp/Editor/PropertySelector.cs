@@ -12,14 +12,15 @@ namespace Lasp.Editor
                            SerializedProperty spPropertyType,
                            SerializedProperty spPropertyName)
         {
-            // Type of the parent component
             var componentType = spTarget.objectReferenceValue.GetType();
+            var propertyTypeName = spPropertyType.stringValue;
 
             // Candidate enumeration
-            if (componentType != _cachedComponentType)
+            if (componentType != _cachedComponentType ||
+                propertyTypeName != _cachedPropertyTypeName)
             {
                 // Determine the target property type using reflection.
-                _cachedPropertyType = Type.GetType(spPropertyType.stringValue);
+                _cachedPropertyType = Type.GetType(propertyTypeName);
 
                 // Property name candidates query
                 _candidates = componentType
@@ -28,6 +29,7 @@ namespace Lasp.Editor
                   .Select(prop => prop.Name).ToArray();
 
                 _cachedComponentType = componentType;
+                _cachedPropertyTypeName = propertyTypeName;
             }
 
             // Clear the selection and show a message if there is no candidate.
@@ -55,6 +57,7 @@ namespace Lasp.Editor
 
         Type _cachedComponentType;
         Type _cachedPropertyType;
+        string _cachedPropertyTypeName;
         string [] _candidates;
     }
 }
