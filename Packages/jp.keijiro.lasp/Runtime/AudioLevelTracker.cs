@@ -78,6 +78,11 @@ namespace Lasp
         // Curent level in the normalized scale
         public float normalizedLevel => _normalizedLevel;
 
+        // Raw wave audio data as NativeSlice
+        public Unity.Collections.NativeSlice<float> AudioDataSlice
+          => Stream?.GetChannelDataSlice(channel)
+             ?? default(Unity.Collections.NativeSlice<float>);
+
         // Reset the auto gain state.
         public void ResetAutoGain() => _head = kSilence;
 
