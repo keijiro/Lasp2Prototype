@@ -3,38 +3,23 @@ using UnityEditor;
 
 namespace Lasp.Editor
 {
-    [CustomEditor(typeof(PropertyBinderTest))]
-    sealed class PropertyBinderTestEditor : UnityEditor.Editor
+    //
+    // Custom editor for editing property binder list
+    //
+    sealed class PropertyBinderEditor
     {
-        #region Inspector implementation
+        #region Public methods
 
-        SerializedProperty _binders;
-
-        static class Styles
+        public PropertyBinderEditor(SerializedProperty binders)
         {
-            public static Label Value0   = "Value at 0";
-            public static Label Value1   = "Value at 1";
-            public static Label MoveUp   = "Move Up";
-            public static Label MoveDown = "Move Down";
-            public static Label Remove   = "Remove";
-        }
-
-        void OnEnable()
-        {
-            var finder = new PropertyFinder(serializedObject);
-            _binders = finder["_binders"];
-
+            _binders = binders;
             ComponentSelector.InvalidateCache();
         }
 
-        public override void OnInspectorGUI()
+        public void ShowGUI()
         {
-            serializedObject.Update();
-
             for (var i = 0; i < _binders.arraySize; i++)
                 ShowPropertyBinderEditor(i);
-
-            serializedObject.ApplyModifiedProperties();
 
             CoreEditorUtils.DrawSplitter();
 
@@ -45,6 +30,21 @@ namespace Lasp.Editor
 
             if (GUI.Button(rect, "Add Property Binder"))
                 CreateNewPropertyBinderMenu().DropDown(rect);
+        }
+
+        #endregion
+
+        #region Private members
+
+        SerializedProperty _binders;
+
+        static class Styles
+        {
+            public static Label Value0   = "Value at 0";
+            public static Label Value1   = "Value at 1";
+            public static Label MoveUp   = "Move Up";
+            public static Label MoveDown = "Move Down";
+            public static Label Remove   = "Remove";
         }
 
         #endregion
@@ -67,13 +67,13 @@ namespace Lasp.Editor
 
         void OnAddNewPropertyBinder<T>() where T : new()
         {
-            serializedObject.Update();
+            _binders.serializedObject.Update();
 
             var i = _binders.arraySize;
             _binders.InsertArrayElementAtIndex(i);
             _binders.GetArrayElementAtIndex(i).managedReferenceValue = new T();
 
-            serializedObject.ApplyModifiedProperties();
+            _binders.serializedObject.ApplyModifiedProperties();
         }
 
         #endregion
@@ -141,16 +141,16 @@ namespace Lasp.Editor
 
         void OnMoveControl(int src, int dst)
         {
-            serializedObject.Update();
+            _binders.serializedObject.Update();
             _binders.MoveArrayElement(src, dst);
-            serializedObject.ApplyModifiedProperties();
+            _binders.serializedObject.ApplyModifiedProperties();
         }
 
         void OnRemoveControl(int index)
         {
-            serializedObject.Update();
+            _binders.serializedObject.Update();
             _binders.DeleteArrayElementAtIndex(index);
-            serializedObject.ApplyModifiedProperties();
+            _binders.serializedObject.ApplyModifiedProperties();
         }
 
         #endregion

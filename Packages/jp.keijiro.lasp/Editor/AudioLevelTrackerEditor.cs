@@ -20,7 +20,8 @@ namespace Lasp.Editor
         SerializedProperty _gain;
         SerializedProperty _holdAndFallDown;
         SerializedProperty _fallDownSpeed;
-        SerializedProperty _normalizedLevelEvent;
+
+        PropertyBinderEditor _propertyBinderEditor;
 
         static class Styles
         {
@@ -58,16 +59,18 @@ namespace Lasp.Editor
         void OnEnable()
         {
             var finder = new PropertyFinder(serializedObject);
-            _useDefaultDevice     = finder["_useDefaultDevice"];
-            _deviceID             = finder["_deviceID"];
-            _channel              = finder["_channel"];
-            _filterType           = finder["_filterType"];
-            _dynamicRange         = finder["_dynamicRange"];
-            _autoGain             = finder["_autoGain"];
-            _gain                 = finder["_gain"];
-            _holdAndFallDown      = finder["_holdAndFallDown"];
-            _fallDownSpeed        = finder["_fallDownSpeed"];
-            _normalizedLevelEvent = finder["_normalizedLevelEvent"];
+            _useDefaultDevice = finder["_useDefaultDevice"];
+            _deviceID         = finder["_deviceID"];
+            _channel          = finder["_channel"];
+            _filterType       = finder["_filterType"];
+            _dynamicRange     = finder["_dynamicRange"];
+            _autoGain         = finder["_autoGain"];
+            _gain             = finder["_gain"];
+            _holdAndFallDown  = finder["_holdAndFallDown"];
+            _fallDownSpeed    = finder["_fallDownSpeed"];
+
+            _propertyBinderEditor
+              = new PropertyBinderEditor(finder["_propertyBinders"]);
         }
 
         public override bool RequiresConstantRepaint()
@@ -136,12 +139,10 @@ namespace Lasp.Editor
                     foreach (AudioLevelTracker t in targets) t.ResetAutoGain();
             }
 
-            EditorGUILayout.Space();
-
-            // UnityEvent editor
-            EditorGUILayout.PropertyField(_normalizedLevelEvent);
-
             serializedObject.ApplyModifiedProperties();
+
+            // Property binders
+            if (targets.Length == 1) _propertyBinderEditor.ShowGUI();
         }
     }
 }

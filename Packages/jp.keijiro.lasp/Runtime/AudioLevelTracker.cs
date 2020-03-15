@@ -3,12 +3,6 @@ using UnityEngine;
 namespace Lasp
 {
     //
-    // A UnityEvent class used to drive components by audio level
-    //
-    [System.Serializable]
-    public class AudioLevelEvent : UnityEngine.Events.UnityEvent<float> {}
-
-    //
     // Unity component used to track audio input level and drive other
     // components via UnityEvent
     //
@@ -67,11 +61,8 @@ namespace Lasp
           { get => _fallDownSpeed;
             set => _fallDownSpeed = value; }
 
-        // Audio level (in the normalized scale) output event
-        [SerializeField] AudioLevelEvent _normalizedLevelEvent = null;
-        public AudioLevelEvent normalizedLevelEvent
-          { get => _normalizedLevelEvent;
-            set => _normalizedLevelEvent = value; }
+        // Property binders
+        [SerializeReference] PropertyBinder [] _propertyBinders = null;
 
         #endregion
 
@@ -161,7 +152,7 @@ namespace Lasp
             }
 
             // Output
-            _normalizedLevelEvent?.Invoke(_normalizedLevel);
+            foreach (var b in _propertyBinders) b.Level = _normalizedLevel;
         }
 
         #endregion

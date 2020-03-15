@@ -43,8 +43,7 @@ namespace Lasp.Editor
         public static string Shorten(SerializedProperty prop)
           => ObjectNames.NicifyVariableName(
                prop.managedReferenceFullTypename
-               .Replace("Lasp.Runtime Lasp.", "")
-               .Replace("PropertyBinder", ""));
+               .Replace("Lasp.Runtime Lasp.", ""));
     }
 
     static class PropertyBinderTypeLabel<T>
