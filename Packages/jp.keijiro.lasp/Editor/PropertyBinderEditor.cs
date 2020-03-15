@@ -18,10 +18,13 @@ namespace Lasp.Editor
 
         public void ShowGUI()
         {
+            EditorGUILayout.Space();
+
             for (var i = 0; i < _binders.arraySize; i++)
                 ShowPropertyBinderEditor(i);
 
             CoreEditorUtils.DrawSplitter();
+            EditorGUILayout.Space();
 
             // "Add Property Binder" button
             var rect = EditorGUILayout.GetControlRect();
@@ -96,6 +99,9 @@ namespace Lasp.Editor
 
             if (!toggle) return;
 
+            _binders.serializedObject.Update();
+            EditorGUILayout.Space();
+
             // Properties
             var target = finder["_target"];
             EditorGUILayout.PropertyField(target);
@@ -107,6 +113,9 @@ namespace Lasp.Editor
                 EditorGUILayout.PropertyField(finder["_value0"], Styles.Value0);
                 EditorGUILayout.PropertyField(finder["_value1"], Styles.Value1);
             }
+
+            _binders.serializedObject.ApplyModifiedProperties();
+            EditorGUILayout.Space();
         }
 
         #endregion

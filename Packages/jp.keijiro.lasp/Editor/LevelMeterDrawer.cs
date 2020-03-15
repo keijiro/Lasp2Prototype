@@ -10,7 +10,7 @@ namespace Lasp.Editor
     {
         static class Styles
         {
-            public static Color Background = new Color(0.3f, 0.3f, 0.3f, 1);
+            public static Color Background = new Color(0.1f, 0.1f, 0.1f, 1);
             public static Color Gray = new Color(0.3f, 0.3f, 0.3f, 1);
             public static Color Green1 = new Color(0, 0.3f, 0, 1);
             public static Color Green2 = new Color(0, 0.7f, 0, 1);
@@ -20,7 +20,7 @@ namespace Lasp.Editor
         // Draw a level meter with a given AudioLevelTracker instance.
         public static void DrawMeter(AudioLevelTracker tracker)
         {
-            var rect = GUILayoutUtility.GetRect(128, 9);
+            var rect = GUILayoutUtility.GetRect(128, 10);
 
             const float kMeterRange = 60;
             var amp  = 1 + tracker.inputLevel  / kMeterRange;
@@ -45,11 +45,11 @@ namespace Lasp.Editor
             DrawRect(x3 - 3 / rect.width, 0, x3, 1, rect, Color.green);
 
             // Label: -60dB
-            var pm60 = new Vector2(rect.xMin + 1, rect.yMax - 10);
+            var pm60 = new Vector2(rect.xMin + 1, rect.yMax - 8);
             Handles.Label(pm60, "-60dB", EditorStyles.miniLabel);
 
             // Label: 0dB
-            var p0 = new Vector2(rect.xMin + rect.width - 22, rect.yMax - 10);
+            var p0 = new Vector2(rect.xMin + rect.width - 22, rect.yMax - 8);
             Handles.Label(p0, "0dB", EditorStyles.miniLabel);
         }
 

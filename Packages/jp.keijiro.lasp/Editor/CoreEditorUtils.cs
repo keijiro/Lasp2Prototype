@@ -78,7 +78,7 @@ namespace Lasp.Editor
 
         public static bool DrawHeaderToggle(GUIContent title, SerializedProperty group, SerializedProperty activeField, Action<Vector2> contextAction = null)
         {
-            var backgroundRect = GUILayoutUtility.GetRect(1f, 17f);
+            var backgroundRect = GUILayoutUtility.GetRect(1f, 18f);
 
             var labelRect = backgroundRect;
             labelRect.xMin += 32f;
@@ -87,7 +87,7 @@ namespace Lasp.Editor
             var foldoutRect = backgroundRect;
             foldoutRect.y += 1f;
             foldoutRect.width = 13f;
-            foldoutRect.height = 13f;
+            foldoutRect.height = 14f;
 
             var toggleRect = backgroundRect;
             toggleRect.x += 16f;
@@ -119,7 +119,7 @@ namespace Lasp.Editor
 
             // Context menu
             var menuIcon = CoreEditorStyles.paneOptionsIcon;
-            var menuRect = new Rect(labelRect.xMax + 4f, labelRect.y + 4f, menuIcon.width, menuIcon.height);
+            var menuRect = new Rect(labelRect.xMax + 4f, labelRect.y + 2f, menuIcon.width, menuIcon.height);
 
             if (contextAction != null)
                 GUI.DrawTexture(menuRect, menuIcon);
